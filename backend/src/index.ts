@@ -11,6 +11,7 @@ import { healthRoutes } from './routes/health'
 import { userRoutes } from './routes/users'
 import { scheduleRoutes } from './routes/schedules'
 import { taskRoutes } from './routes/tasks'
+import { tokenRoutes } from './routes/tokens'
 
 const app = Fastify({
   logger: {
@@ -68,6 +69,7 @@ async function main() {
   await app.register(userRoutes, { prefix: '/api/users' })
   await app.register(scheduleRoutes, { prefix: '/api/schedules' })
   await app.register(taskRoutes, { prefix: '/api/tasks' })
+  await app.register(tokenRoutes, { prefix: '/api/tokens' })
 
   // ── Graceful shutdown ────────────────────────────────────────
   const shutdown = async (signal: string) => {

@@ -81,9 +81,14 @@ async function main() {
   ]
 
   for (const reward of rewards) {
-    await prisma.reward.create({
-      data: { ...reward, childId: child.id, requiresApproval: true },
-    }).catch(() => {}) // negeer duplicaten
+    const existing = await prisma.reward.findFirst({
+      where: { childId: child.id, title: reward.title },
+    })
+    if (!existing) {
+      await prisma.reward.create({
+        data: { ...reward, childId: child.id, requiresApproval: true },
+      })
+    }
   }
   console.log('✅ Standaard beloningen aangemaakt')
 

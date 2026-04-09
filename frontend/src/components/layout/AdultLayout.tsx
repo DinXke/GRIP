@@ -5,11 +5,37 @@ import {
 import { useAuthStore } from '../../stores/authStore'
 import { motion } from 'framer-motion'
 
+// Kalender-icoon voor schema's
+function IconCalendar({ size = 28, strokeWidth = 2.5 }: { size?: number; strokeWidth?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} aria-hidden="true">
+      <rect x="4" y="6" width="24" height="22" rx="3" stroke="currentColor" />
+      <path d="M4 12H28" stroke="currentColor" />
+      <path d="M10 4V8M22 4V8" stroke="currentColor" />
+      <circle cx="11" cy="19" r="1.5" fill="currentColor" />
+      <circle cx="16" cy="19" r="1.5" fill="currentColor" />
+      <circle cx="21" cy="19" r="1.5" fill="currentColor" />
+    </svg>
+  )
+}
+
+// Lijst met vinkjes — taken
+function IconTasks({ size = 28, strokeWidth = 2.5 }: { size?: number; strokeWidth?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} aria-hidden="true">
+      <path d="M12 8H26M12 16H26M12 24H22" stroke="currentColor" />
+      <path d="M6 8L7.5 9.5L10 7" stroke="currentColor" />
+      <path d="M6 16L7.5 17.5L10 15" stroke="currentColor" />
+      <circle cx="7.5" cy="24" r="1.5" fill="currentColor" />
+    </svg>
+  )
+}
+
 const sidebarLinks = [
   { to: '/dashboard', label: 'Overzicht', Icon: IconHome },
-  { to: '/dashboard/tasks', label: 'Taken', Icon: IconExercise },
-  { to: '/dashboard/schedule', label: 'Schema\'s', Icon: IconTokens },
-  { to: '/dashboard/tokens', label: 'Tokens', Icon: IconTokens },
+  { to: '/dashboard/tasks', label: 'Taken', Icon: IconTasks },
+  { to: '/dashboard/schedule', label: "Schema's", Icon: IconCalendar },
+  { to: '/dashboard/tokens', label: 'Beloningen', Icon: IconTokens },
   { to: '/dashboard/communication', label: 'Communicatie', Icon: IconCommunication },
   { to: '/dashboard/dossier', label: 'Dossier', Icon: IconDossier },
   { to: '/dashboard/settings', label: 'Instellingen', Icon: IconSettings },

@@ -170,38 +170,129 @@ export function useDeleteTask() {
   })
 }
 
+// ── Users / Children ──────────────────────────────────────────
+
+export interface ChildProfile {
+  id: string
+  name: string
+  avatarUrl?: string | null
+}
+
+export function useChildren() {
+  return useQuery({
+    queryKey: ['children'],
+    queryFn: () => api.get<{ children: ChildProfile[] }>('/api/auth/children'),
+  })
+}
+
 // ── Tokens ────────────────────────────────────────────────────
 
-export interface TokenData {
+export interface TokenTransaction {
+  id: string
+  amount: number
+  type: string
+  sourceType: string
+  note?: string | null
+  createdAt: string
+  reward?: { id: string; title: string } | null
+}
+
+export interface TokenBalanceResponse {
   balance: number
   todayEarned: number
-  transactions: {
-    id: string
-    amount: number
-    type: string
-    sourceType: string
-    note?: string | null
-    createdAt: string
-  }[]
+  streak: number
+  transactions: TokenTransaction[]
+}
+
+export interface Reward {
+  id: string
+  childId: string
+  title: string
+  description?: string | null
+  imageUrl?: string | null
+  costTokens: number
+  isAvailable: boolean
+  requiresApproval: boolean
+  category?: string | null
+  expiresAt?: string | null
+  sortOrder: number
 }
 
 export function useTokenBalance(childId?: string) {
   return useQuery({
     queryKey: ['tokens', childId],
-    queryFn: async () => {
-      const txns = await api.get<{ transactions: TokenData['transactions'] }>(
-        `/api/tokens/${childId}`
-      )
-      const balance = txns.transactions.reduce(
-        (sum, t) => (t.type === 'redeemed' ? sum - t.amount : sum + t.amount),
-        0
-      )
-      const today = new Date().toDateString()
-      const todayEarned = txns.transactions
-        .filter((t) => t.type === 'earned' && new Date(t.createdAt).toDateString() === today)
-        .reduce((sum, t) => sum + t.amount, 0)
-      return { balance, todayEarned, transactions: txns.transactions }
-    },
+    queryFn: () => api.get<TokenBalanceResponse>(`/api/tokens/${childId}`),
     enabled: !!childId,
+    refetchInterval: 30_000,
+  })
+}
+
+export function useRewards(childId?: string) {
+  return useQuery({
+    queryKey: ['rewards', childId],
+    queryFn: () => api.get<{ rewards: Reward[] }>(`/api/tokens/${childId}/rewards`),
+    enabled: !!childId,
+  })
+}
+
+export function useRedeemReward() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ childId, rewardId }: { childId: string; rewardId: string }) =>
+      api.post<{ transaction: TokenTransaction; requiresApproval: boolean; rewardTitle: string }>(
+        `/api/tokens/${childId}/redeem`,
+        { rewardId }
+      ),
+    onSuccess: (_, { childId }) => {
+      qc.invalidateQueries({ queryKey: ['tokens', childId] })
+    },
+  })
+}
+
+export function useGrantTokens() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ childId, amount, note }: { childId: string; amount: number; note?: string }) =>
+      api.post(`/api/tokens/${childId}/grant`, { amount, note }),
+    onSuccess: (_, { childId }) => {
+      qc.invalidateQueries({ queryKey: ['tokens', childId] })
+    },
+  })
+}
+
+export function useCreateReward() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      childId,
+      ...data
+    }: {
+      childId: string
+      title: string
+      description?: string
+      costTokens: number
+      requiresApproval?: boolean
+      category?: string
+    }) => api.post<Reward>(`/api/tokens/${childId}/rewards`, data),
+    onSuccess: (_, { childId }) => {
+      qc.invalidateQueries({ queryKey: ['rewards', childId] })
+    },
+  })
+}
+
+export function useUpdateReward() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }: Partial<Reward> & { id: string }) =>
+      api.put(`/api/tokens/rewards/${id}`, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['rewards'] }),
+  })
+}
+
+export function useDeleteReward() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (rewardId: string) => api.delete(`/api/tokens/rewards/${rewardId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['rewards'] }),
   })
 }
