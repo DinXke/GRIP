@@ -314,7 +314,7 @@ export function SystemPage() {
             onClick={async () => {
               try {
                 // Bypass service worker via cache: 'no-store'
-                const response = await fetch('/api/trmnl/plugin.zip', { cache: 'no-store' })
+                const response = await fetch(`/api/trmnl/plugin.zip?_=${Date.now()}`, { cache: 'no-store' })
                 if (!response.ok) throw new Error('Download mislukt')
                 const blob = await response.blob()
                 const blobUrl = URL.createObjectURL(blob)
@@ -333,7 +333,7 @@ export function SystemPage() {
                 }, 5000)
               } catch (e) {
                 // Fallback: open in new tab (browser will download due to Content-Disposition)
-                window.open('/api/trmnl/plugin.zip', '_blank')
+                window.open(`/api/trmnl/plugin.zip?_=${Date.now()}`, '_blank')
               }
             }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-medium hover:opacity-90"

@@ -32,6 +32,16 @@ interface ChildList {
 const EMOJI_OPTIONS = ['📝', '📋', '🎯', '🎒', '🎮', '📚', '🏠', '🎨', '🎵', '🌟', '💪', '🧹']
 const COLOR_OPTIONS = ['#7BAFA3', '#E8734A', '#5B8C5A', '#D4973B', '#F2C94C', '#A8C5D6']
 
+// Bepaal of tekst wit of donker moet zijn op basis van achtergrondkleur
+function textOnColor(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  // Perceived luminance
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return lum > 0.55 ? '#3D3229' : '#FFFFFF'
+}
+
 // ── Hooks ─────────────────────────────────────────────────────
 
 function useChildLists() {
@@ -147,7 +157,8 @@ function ListItemRow({
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
               transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-              className="text-white text-sm font-bold"
+              className="text-sm font-bold"
+              style={{ color: textOnColor(color) }}
             >
               ✓
             </motion.span>
@@ -235,9 +246,10 @@ function NewItemInput({
         type="submit"
         whileTap={{ scale: 0.9 }}
         disabled={!value.trim()}
-        className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold transition-opacity"
+        className="w-9 h-9 rounded-full flex items-center justify-center font-bold transition-opacity"
         style={{
           background: color,
+          color: textOnColor(color),
           opacity: value.trim() ? 1 : 0.4,
         }}
         aria-label="Toevoegen"
@@ -494,9 +506,10 @@ function NewListForm({
           type="submit"
           disabled={!title.trim()}
           whileTap={{ scale: 0.95 }}
-          className="flex-1 py-3 rounded-full font-body font-semibold text-sm text-white transition-opacity"
+          className="flex-1 py-3 rounded-full font-body font-semibold text-sm transition-opacity"
           style={{
             background: color,
+            color: textOnColor(color),
             opacity: title.trim() ? 1 : 0.4,
           }}
         >
@@ -578,8 +591,8 @@ export function ListsPage() {
           <motion.button
             onClick={() => setShowNewForm(true)}
             whileTap={{ scale: 0.9 }}
-            className="w-14 h-14 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg"
-            style={{ background: 'var(--accent-warm)', minWidth: 56, minHeight: 56 }}
+            className="w-14 h-14 rounded-full flex items-center justify-center text-3xl font-bold shadow-lg"
+            style={{ background: 'var(--accent-warm)', color: '#3D3229', minWidth: 56, minHeight: 56 }}
             aria-label="Nieuw lijstje"
           >
             +
@@ -630,8 +643,8 @@ export function ListsPage() {
         <motion.button
           onClick={() => { setShowNewForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
           whileTap={{ scale: 0.9 }}
-          className="fixed right-5 z-30 w-14 h-14 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-xl"
-          style={{ background: 'var(--accent-warm)', bottom: 90 }}
+          className="fixed right-5 z-30 w-14 h-14 rounded-full flex items-center justify-center text-3xl font-bold shadow-xl"
+          style={{ background: 'var(--accent-warm)', color: '#3D3229', bottom: 90 }}
           aria-label="Nieuw lijstje"
         >
           +

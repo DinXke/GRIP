@@ -68,12 +68,14 @@ function ExerciseRenderer({
   hint,
   showAnswer,
   isAnswering,
+  attempts,
 }: {
   item: SessionItem
   onAnswer: (answer: string) => void
   hint: string | null
   showAnswer: boolean
   isAnswering: boolean
+  attempts: number
 }) {
   const q = item.exercise.questionJson
   const [fillValue, setFillValue] = useState('')
@@ -89,6 +91,14 @@ function ExerciseRenderer({
     setFillValue('')
     setSelected(null)
   }, [item.id])
+
+  // Reset selected na fout antwoord zodat je opnieuw kunt proberen
+  useEffect(() => {
+    if (attempts > 0 && !showAnswer) {
+      const timer = setTimeout(() => setSelected(null), 800)
+      return () => clearTimeout(timer)
+    }
+  }, [attempts, showAnswer])
 
   const handleOptionClick = (option: string) => {
     if (isAnswering || selected !== null) return
@@ -516,6 +526,7 @@ function ExerciseSession({
               hint={hint}
               showAnswer={showAnswer}
               isAnswering={isAnswering}
+              attempts={currentItem.attempts}
             />
           </motion.div>
         )}
