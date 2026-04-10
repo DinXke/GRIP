@@ -8,10 +8,35 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { api } from '../../lib/api'
 import { useSpeechInput } from '../../hooks/useSpeechInput'
 import { TtsButton } from '../../components/TtsButton'
+
+// ── Spelletjes-link component ─────────────────────────────────
+function GamesLink({ to, emoji, title, sub, color }: {
+  to: string; emoji: string; title: string; sub: string; color: string
+}) {
+  const navigate = useNavigate()
+  return (
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      onClick={() => navigate(to)}
+      className="w-full card flex items-center gap-4 px-5 py-5 text-left"
+      style={{ borderLeft: `4px solid ${color}`, background: `${color}08` }}
+    >
+      <span className="text-4xl">{emoji}</span>
+      <div className="flex-1">
+        <p className="font-display font-bold text-ink text-xl">{title}</p>
+        <p className="font-body text-ink-muted text-sm mt-0.5">{sub}</p>
+      </div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </motion.button>
+  )
+}
 
 // ── Types ──────────────────────────────────────────────────────
 interface ExerciseQuestion {
@@ -626,6 +651,7 @@ export default function ExercisesPage() {
   const [result, setResult] = useState<{ correct: number; total: number; bonusTokens: number } | null>(null)
   const [sessionTokens, setSessionTokens] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [mode, setMode] = useState<'exercises' | 'games'>('exercises')
   const [availability, setAvailability] = useState<Record<string, Record<number, number>>>({})
 
   // Fetch availability on mount
@@ -696,8 +722,57 @@ export default function ExercisesPage() {
               className="font-display font-bold text-ink mb-2"
               style={{ fontSize: 'var(--font-size-heading)' }}
             >
-              Oefeningen 📚
+              Leren & Spelen 📚
             </h1>
+
+            {/* Modus: Oefenen of Spelletjes */}
+            <div className="flex gap-2 mb-6">
+              <button
+                onClick={() => setMode('exercises')}
+                className="flex-1 py-3 rounded-2xl font-display font-bold text-base"
+                style={{
+                  background: mode === 'exercises' ? 'var(--accent-primary)' : 'var(--bg-surface)',
+                  color: mode === 'exercises' ? 'white' : 'var(--text-muted)',
+                  border: `2px solid ${mode === 'exercises' ? 'var(--accent-primary)' : 'transparent'}`,
+                }}
+              >
+                📝 Oefenen
+              </button>
+              <button
+                onClick={() => setMode('games')}
+                className="flex-1 py-3 rounded-2xl font-display font-bold text-base"
+                style={{
+                  background: mode === 'games' ? 'var(--accent-warm)' : 'var(--bg-surface)',
+                  color: mode === 'games' ? 'white' : 'var(--text-muted)',
+                  border: `2px solid ${mode === 'games' ? 'var(--accent-warm)' : 'transparent'}`,
+                }}
+              >
+                🎮 Spelletjes
+              </button>
+            </div>
+
+            {/* Spelletjes modus */}
+            {mode === 'games' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                <GamesLink
+                  to="/app/rekenspelletjes"
+                  emoji="🔢"
+                  title="Rekenspelletjes"
+                  sub="Memory, bubbels, pizza breuken, patronen..."
+                  color="#E8734A"
+                />
+                <GamesLink
+                  to="/app/taalspelletjes"
+                  emoji="📖"
+                  title="Taalspelletjes"
+                  sub="Woordpuzzels, woordzoeker, zinnen bouwen..."
+                  color="#7BAFA3"
+                />
+              </motion.div>
+            )}
+
+            {/* Oefenen modus */}
+            {mode === 'exercises' && <>
             <p className="font-body text-ink-muted text-base mb-6">
               Kies een vak en een niveau
             </p>
@@ -797,6 +872,7 @@ export default function ExercisesPage() {
                 ? 'Geen oefeningen beschikbaar'
                 : 'Starten! 🚀'}
             </button>
+            </>}
           </motion.div>
         )}
 

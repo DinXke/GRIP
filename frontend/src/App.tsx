@@ -21,6 +21,8 @@ const ChildSettingsPage = lazy(() => import('./pages/child/ChildSettingsPage').t
 const IndependencePage = lazy(() => import('./pages/child/IndependencePage').then(m => ({ default: m.IndependencePage })))
 const SocialScriptsPage = lazy(() => import('./pages/child/SocialScriptsPage').then(m => ({ default: m.SocialScriptsPage })))
 const ListsPage = lazy(() => import('./pages/child/ListsPage').then(m => ({ default: m.ListsPage })))
+const LanguageGamesPage = lazy(() => import('./pages/child/games/LanguageGamesPage').then(m => ({ default: m.LanguageGamesPage })))
+const MathGamesPage = lazy(() => import('./pages/child/games/MathGamesPage').then(m => ({ default: m.MathGamesPage })))
 
 // Ouder/admin
 const DashboardPage = lazy(() => import('./pages/parent/DashboardPage'))
@@ -105,6 +107,8 @@ export default function App() {
           <Route path="social" element={<SocialScriptsPage />} />
           <Route path="geld" element={<MoneyPage />} />
           <Route path="lijstjes" element={<ListsPage />} />
+          <Route path="taalspelletjes" element={<LanguageGamesPage />} />
+          <Route path="rekenspelletjes" element={<MathGamesPage />} />
           <Route path="settings" element={<ChildSettingsPage />} />
         </Route>
 
