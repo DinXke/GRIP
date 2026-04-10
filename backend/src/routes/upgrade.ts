@@ -37,7 +37,7 @@ export async function upgradeRoutes(fastify: FastifyInstance) {
   // ── GET /api/admin/system/update-check ───────────────────────
   fastify.get('/api/admin/system/update-check', { preHandler: requireAdmin }, async (_, reply) => {
     if (!existsSync(UPGRADE_SCRIPT)) {
-      return { update_available: false, error: 'Upgrade script niet gevonden' }
+      return { update_available: false, error: 'Docker-modus: gebruik "docker compose pull && docker compose up -d" op de host om te updaten.' }
     }
 
     try {

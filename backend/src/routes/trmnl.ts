@@ -198,35 +198,12 @@ custom_fields:
 </div>`,
     }
 
-    try {
-      const archiver = await import('archiver')
-      const archive = archiver.default('zip', { zlib: { level: 9 } })
-
-      for (const [name, content] of Object.entries(files)) {
-        archive.append(content, { name })
-      }
-
-      // Collect stream into Buffer before sending
-      const chunks: Buffer[] = []
-      archive.on('data', (chunk: Buffer) => chunks.push(chunk))
-
-      await new Promise<void>((resolve, reject) => {
-        archive.on('end', resolve)
-        archive.on('error', reject)
-        archive.finalize()
-      })
-
-      const zipBuffer = Buffer.concat(chunks)
-      reply.header('Content-Type', 'application/zip')
-      reply.header('Content-Disposition', 'attachment; filename="grip-trmnl-plugin.zip"')
-      reply.header('Content-Length', zipBuffer.length)
-      return reply.send(zipBuffer)
-    } catch (err) {
-      // Fallback: serve als JSON
-      reply.header('Content-Type', 'application/json')
-      reply.header('Content-Disposition', 'attachment; filename="grip-trmnl-plugin.json"')
-      return { error: 'ZIP generatie mislukt', files: Object.keys(files), note: 'Installeer archiver: npm install archiver' }
-    }
+    // Build ZIP using Node.js zlib (no archiver dependency)
+    const zipBuffer = buildSimpleZip(files)
+    reply.header('Content-Type', 'application/zip')
+    reply.header('Content-Disposition', 'attachment; filename="grip-trmnl-plugin.zip"')
+    reply.header('Content-Length', zipBuffer.length)
+    return reply.send(zipBuffer)
   })
 
   // ── GET /api/trmnl/plugin-config — JSON config (legacy) ─────
@@ -267,6 +244,93 @@ custom_fields:
       })),
     }
   })
+}
+
+/** Build a minimal ZIP file from a map of filename → content (no dependencies) */
+function buildSimpleZip(files: Record<string, string>): Buffer {
+  const entries: { name: Buffer; data: Buffer; crc: number }[] = []
+
+  for (const [name, content] of Object.entries(files)) {
+    const nameBytes = Buffer.from(name, 'utf-8')
+    const data = Buffer.from(content, 'utf-8')
+    const crc = crc32(data)
+    entries.push({ name: nameBytes, data, crc })
+  }
+
+  const localHeaders: Buffer[] = []
+  const centralHeaders: Buffer[] = []
+  let offset = 0
+
+  for (const entry of entries) {
+    // Local file header
+    const local = Buffer.alloc(30 + entry.name.length + entry.data.length)
+    local.writeUInt32LE(0x04034b50, 0)    // signature
+    local.writeUInt16LE(20, 4)            // version needed
+    local.writeUInt16LE(0, 6)             // flags
+    local.writeUInt16LE(0, 8)             // compression: stored
+    local.writeUInt16LE(0, 10)            // mod time
+    local.writeUInt16LE(0, 12)            // mod date
+    local.writeUInt32LE(entry.crc, 14)    // crc32
+    local.writeUInt32LE(entry.data.length, 18)  // compressed size
+    local.writeUInt32LE(entry.data.length, 22)  // uncompressed size
+    local.writeUInt16LE(entry.name.length, 26)  // filename length
+    local.writeUInt16LE(0, 28)            // extra field length
+    entry.name.copy(local, 30)
+    entry.data.copy(local, 30 + entry.name.length)
+    localHeaders.push(local)
+
+    // Central directory header
+    const central = Buffer.alloc(46 + entry.name.length)
+    central.writeUInt32LE(0x02014b50, 0)  // signature
+    central.writeUInt16LE(20, 4)          // version made by
+    central.writeUInt16LE(20, 6)          // version needed
+    central.writeUInt16LE(0, 8)           // flags
+    central.writeUInt16LE(0, 10)          // compression
+    central.writeUInt16LE(0, 12)          // mod time
+    central.writeUInt16LE(0, 14)          // mod date
+    central.writeUInt32LE(entry.crc, 16)
+    central.writeUInt32LE(entry.data.length, 20)
+    central.writeUInt32LE(entry.data.length, 24)
+    central.writeUInt16LE(entry.name.length, 28)
+    central.writeUInt16LE(0, 30)          // extra length
+    central.writeUInt16LE(0, 32)          // comment length
+    central.writeUInt16LE(0, 34)          // disk number
+    central.writeUInt16LE(0, 36)          // internal attrs
+    central.writeUInt32LE(0, 38)          // external attrs
+    central.writeUInt32LE(offset, 42)     // local header offset
+    entry.name.copy(central, 46)
+    centralHeaders.push(central)
+
+    offset += local.length
+  }
+
+  const centralDir = Buffer.concat(centralHeaders)
+  const centralDirOffset = offset
+
+  // End of central directory
+  const eocd = Buffer.alloc(22)
+  eocd.writeUInt32LE(0x06054b50, 0)
+  eocd.writeUInt16LE(0, 4)
+  eocd.writeUInt16LE(0, 6)
+  eocd.writeUInt16LE(entries.length, 8)
+  eocd.writeUInt16LE(entries.length, 10)
+  eocd.writeUInt32LE(centralDir.length, 12)
+  eocd.writeUInt32LE(centralDirOffset, 16)
+  eocd.writeUInt16LE(0, 20)
+
+  return Buffer.concat([...localHeaders, centralDir, eocd])
+}
+
+/** CRC32 — standard ZIP checksum */
+function crc32(buf: Buffer): number {
+  let crc = 0xFFFFFFFF
+  for (let i = 0; i < buf.length; i++) {
+    crc ^= buf[i]
+    for (let j = 0; j < 8; j++) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xEDB88320 : 0)
+    }
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0
 }
 
 function extractBearerToken(header?: string): string | null {

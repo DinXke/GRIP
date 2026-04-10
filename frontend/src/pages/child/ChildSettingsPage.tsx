@@ -24,7 +24,7 @@ function AvatarPicker({ current, onSelect }: { current: string; onSelect: (id: s
   return (
     <div className="space-y-4">
       {/* Filter knoppen */}
-      <div className="flex gap-2 justify-center">
+      <div className="flex gap-2 justify-center flex-wrap">
         {AVATAR_CATEGORIES.map((f) => ({
           key: f.key,
           label: f.emoji ? `${f.emoji} ${f.label}` : f.label,
@@ -33,7 +33,7 @@ function AvatarPicker({ current, onSelect }: { current: string; onSelect: (id: s
             key={f.key}
             whileTap={{ scale: 0.95 }}
             onClick={() => setFilter(f.key)}
-            className={`px-4 py-2 rounded-full font-display font-medium text-sm transition-all ${
+            className={`px-3 py-1.5 rounded-full font-display font-medium text-xs transition-all ${
               filter === f.key
                 ? 'bg-[var(--accent-warm)] text-white shadow-lg'
                 : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--accent-calm)]/30'
@@ -44,20 +44,20 @@ function AvatarPicker({ current, onSelect }: { current: string; onSelect: (id: s
         ))}
       </div>
 
-      {/* Avatar grid */}
-      <div className="grid grid-cols-4 gap-3">
+      {/* Avatar grid — scrollable */}
+      <div className="grid grid-cols-5 gap-2 max-h-[320px] overflow-y-auto rounded-xl p-1">
         {filtered.map((av) => (
           <motion.button
             key={av.id}
             whileTap={{ scale: 0.9 }}
             onClick={() => onSelect(av.id)}
-            className={`relative p-2 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${
+            className={`relative p-1.5 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
               current === av.id
                 ? 'border-[var(--accent-warm)] bg-[var(--accent-warm)]/10'
                 : 'border-transparent bg-[var(--bg-surface)] hover:border-[var(--accent-calm)]'
             }`}
           >
-            <AvatarDisplay avatarId={av.id} size={64} />
+            <AvatarDisplay avatarId={av.id} size={48} />
             {current === av.id && (
               <motion.div
                 initial={{ scale: 0 }}
