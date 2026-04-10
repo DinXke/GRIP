@@ -25,7 +25,192 @@ function tokenBar(current: number, target: number, maxWidth = 24): string {
   return '█'.repeat(filled) + '░'.repeat(maxWidth - filled)
 }
 
+// ── Dashboard block types & renderers ────────────────────────
+const BLOCK_TYPES = [
+  'dagplanning', 'token_saldo', 'token_voortgang', 'huidige_activiteit',
+  'emotie', 'afspraken', 'streak', 'wist_je_dat', 'spaarpot',
+] as const
+type BlockType = typeof BLOCK_TYPES[number]
+
+interface DashboardBlock { type: BlockType; config?: Record<string, unknown> }
+interface Dashboard {
+  id: string; childId: string; name: string
+  layout: 'full' | 'half_vertical' | 'quadrant'
+  blocks: DashboardBlock[]
+  createdAt: string
+}
+
+// Fun facts rotatie
+const FUN_FACTS = [
+  'Een octopus heeft drie harten.',
+  'Honing kan duizenden jaren goed blijven.',
+  'Koala\'s slapen 22 uur per dag.',
+  'Bananen zijn technisch gezien bessen.',
+  'De Eiffeltoren is in de zomer 15 cm hoger.',
+  'Een slak kan 3 jaar slapen.',
+  'Een groep flamingo\'s heet een "flamboyance".',
+  'De maan drijft elk jaar 3,8 cm weg van de aarde.',
+]
+
+interface BlockData {
+  activities: { id: string; title: string; icon: string | null; startTime: string; durationMinutes: number }[]
+  balance: number
+  earnedToday: number
+  streakDays: number
+  allRewards: { id: string; title: string; costTokens: number }[]
+  nextReward: { title: string; costTokens: number } | null
+  currentActivity: { title: string; icon: string | null; startTime: string; durationMinutes: number } | null
+  isCurrent: boolean
+  lastEmotion: { level: string; createdAt: Date } | null
+  name: string
+  now: Date
+  moneyBalance?: number
+  moneyGoal?: { name: string; targetAmount: number } | null
+}
+
+function renderBlock(type: BlockType, data: BlockData): string {
+  const EMOTION_ICON: Record<string, string> = {
+    great: ':-)', good: ':)', okay: ':-|', sad: ':-(', angry: '>:(',
+  }
+  switch (type) {
+    case 'dagplanning': {
+      const nowMin = data.now.getHours() * 60 + data.now.getMinutes()
+      const rows = data.activities.slice(0, 7).map(a => {
+        const [h, m] = a.startTime.split(':').map(Number)
+        const start = h * 60 + m
+        const isPast = nowMin > start + a.durationMinutes
+        const isCur = data.currentActivity?.startTime === a.startTime && data.isCurrent
+        const marker = isPast ? '✅' : isCur ? '▶' : '○'
+        return `<div class="item"><span class="label">${marker} ${a.title}</span><span class="value">${a.startTime}</span></div>`
+      }).join('')
+      return `<span class="title title--small">Dagplanning</span><div class="data-list">${rows || '<div class="item"><span class="label">Geen schema vandaag</span></div>'}</div>`
+    }
+    case 'token_saldo':
+      return `<span class="title title--small">Token saldo</span><div class="data-list"><div class="item"><span class="label">Saldo</span><span class="value">${data.balance} st</span></div><div class="item"><span class="label">Vandaag</span><span class="value">+${data.earnedToday}</span></div></div>`
+    case 'token_voortgang': {
+      if (data.allRewards.length === 0) return `<span class="title title--small">Voortgang</span><div class="data-list"><div class="item"><span class="label">${data.balance} tokens — geen doelen</span></div></div>`
+      const maxCost = data.allRewards[data.allRewards.length - 1].costTokens
+      const barWidth = 24
+      const filled = Math.min(Math.round((data.balance / maxCost) * barWidth), barWidth)
+      const bar = '█'.repeat(filled) + '░'.repeat(barWidth - filled)
+      const goals = data.allRewards.map(r => {
+        const reached = data.balance >= r.costTokens
+        return `<div class="item"><span class="label">${reached ? '◆' : '◇'} ${r.title}</span><span class="value">${r.costTokens} st</span></div>`
+      }).join('')
+      return `<span class="title title--small">Voortgang</span><div style="margin:6px 0;font-family:monospace;font-size:11px;letter-spacing:1px">${bar}</div><div class="data-list">${goals}</div>`
+    }
+    case 'huidige_activiteit': {
+      const act = data.currentActivity
+      if (!act) return `<span class="title title--small">${data.isCurrent ? '▶ NU' : 'VANDAAG'}</span><p style="font-size:14px">Geen activiteiten meer</p>`
+      return `<span class="title title--small">${data.isCurrent ? '▶ NU' : 'STRAKS'}</span><p style="font-size:18px;font-weight:bold;margin:8px 0">${act.icon ?? ''} ${act.title}</p><p style="font-size:13px">${act.startTime} · ${act.durationMinutes} min</p>`
+    }
+    case 'emotie': {
+      if (!data.lastEmotion) return `<span class="title title--small">Emotie</span><div class="data-list"><div class="item"><span class="label">Nog geen check-in vandaag</span></div></div>`
+      const icon = EMOTION_ICON[data.lastEmotion.level] ?? data.lastEmotion.level
+      return `<span class="title title--small">Emotie</span><div class="data-list"><div class="item"><span class="label">Vandaag</span><span class="value">${icon} ${data.lastEmotion.level}</span></div></div>`
+    }
+    case 'afspraken':
+      return `<span class="title title--small">Afspraken</span><div class="data-list"><div class="item"><span class="label">Zie dagplanning</span></div></div>`
+    case 'streak':
+      return `<span class="title title--small">Streak</span><div class="data-list"><div class="item"><span class="label">${data.streakDays > 0 ? `${data.streakDays} dag${data.streakDays !== 1 ? 'en' : ''} op rij!` : 'Begin vandaag!'}</span></div></div>`
+    case 'wist_je_dat': {
+      const dayIdx = Math.floor(data.now.getTime() / 86400000) % FUN_FACTS.length
+      return `<span class="title title--small">Wist je dat?</span><div class="data-list"><div class="item"><span class="label">${FUN_FACTS[dayIdx]}</span></div></div>`
+    }
+    case 'spaarpot':
+      return `<span class="title title--small">Spaarpotje</span><div class="data-list"><div class="item"><span class="label">Saldo</span><span class="value">${(data.moneyBalance ?? 0).toFixed(2)}</span></div>${data.moneyGoal ? `<div class="item"><span class="label">${data.moneyGoal.name}</span><span class="value">${data.moneyGoal.targetAmount.toFixed(2)}</span></div>` : ''}</div>`
+    default:
+      return `<div class="item"><span class="label">Onbekend blok</span></div>`
+  }
+}
+
 export async function trmnlRoutes(fastify: FastifyInstance) {
+
+  // ── Dashboard CRUD ─────────────────────────────────────────
+
+  // POST /api/trmnl/dashboards — Nieuw dashboard opslaan
+  fastify.post('/dashboards', { preHandler: requireParent }, async (request, reply) => {
+    const { childId, name, layout, blocks } = request.body as {
+      childId: string; name: string
+      layout: 'full' | 'half_vertical' | 'quadrant'
+      blocks: DashboardBlock[]
+    }
+    if (!childId || !name || !layout || !blocks) {
+      return reply.status(400).send({ error: 'childId, name, layout en blocks zijn verplicht' })
+    }
+    // Validate block types
+    for (const b of blocks) {
+      if (!BLOCK_TYPES.includes(b.type as BlockType)) {
+        return reply.status(400).send({ error: `Ongeldig bloktype: ${b.type}` })
+      }
+    }
+    const id = crypto.randomBytes(12).toString('hex')
+    const dashboard: Dashboard = {
+      id, childId, name, layout, blocks,
+      createdAt: new Date().toISOString(),
+    }
+    await redis.set(`trmnl-dashboard:${childId}:${id}`, JSON.stringify(dashboard))
+    // Update index
+    const indexRaw = await redis.get(`trmnl-dashboards:${childId}`)
+    const index: string[] = indexRaw ? JSON.parse(indexRaw) : []
+    if (!index.includes(id)) index.push(id)
+    await redis.set(`trmnl-dashboards:${childId}`, JSON.stringify(index))
+    return { dashboard }
+  })
+
+  // GET /api/trmnl/dashboards/:childId — Alle dashboards voor kind
+  fastify.get('/dashboards/:childId', { preHandler: requireParent }, async (request) => {
+    const { childId } = request.params as { childId: string }
+    const indexRaw = await redis.get(`trmnl-dashboards:${childId}`)
+    const index: string[] = indexRaw ? JSON.parse(indexRaw) : []
+    const dashboards: Dashboard[] = []
+    for (const id of index) {
+      const raw = await redis.get(`trmnl-dashboard:${childId}:${id}`)
+      if (raw) dashboards.push(JSON.parse(raw))
+    }
+    return { dashboards }
+  })
+
+  // PUT /api/trmnl/dashboards/:id — Dashboard bijwerken
+  fastify.put('/dashboards/:id', { preHandler: requireParent }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const { childId, name, layout, blocks } = request.body as {
+      childId: string; name: string
+      layout: 'full' | 'half_vertical' | 'quadrant'
+      blocks: DashboardBlock[]
+    }
+    if (!childId) return reply.status(400).send({ error: 'childId is verplicht' })
+    // Validate block types
+    if (blocks) {
+      for (const b of blocks) {
+        if (!BLOCK_TYPES.includes(b.type as BlockType)) {
+          return reply.status(400).send({ error: `Ongeldig bloktype: ${b.type}` })
+        }
+      }
+    }
+    const raw = await redis.get(`trmnl-dashboard:${childId}:${id}`)
+    if (!raw) return reply.status(404).send({ error: 'Dashboard niet gevonden' })
+    const existing: Dashboard = JSON.parse(raw)
+    const updated: Dashboard = {
+      ...existing,
+      name: name ?? existing.name,
+      layout: layout ?? existing.layout,
+      blocks: blocks ?? existing.blocks,
+    }
+    await redis.set(`trmnl-dashboard:${childId}:${id}`, JSON.stringify(updated))
+    return { dashboard: updated }
+  })
+
+  // DELETE /api/trmnl/dashboards/:id/:childId — Dashboard verwijderen
+  fastify.delete('/dashboards/:id/:childId', { preHandler: requireParent }, async (request, reply) => {
+    const { id, childId } = request.params as { id: string; childId: string }
+    await redis.del(`trmnl-dashboard:${childId}:${id}`)
+    const indexRaw = await redis.get(`trmnl-dashboards:${childId}`)
+    const index: string[] = indexRaw ? JSON.parse(indexRaw) : []
+    const newIndex = index.filter(i => i !== id)
+    await redis.set(`trmnl-dashboards:${childId}`, JSON.stringify(newIndex))
+    return { success: true }
+  })
 
   // ── POST /api/trmnl/generate-token — Genereer TRMNL API token ──
   fastify.post('/generate-token', { preHandler: requireParent }, async (request) => {
@@ -49,10 +234,13 @@ export async function trmnlRoutes(fastify: FastifyInstance) {
 
     if (!device) {
       // Fallback: gebruik de eerste actieve child (development mode)
-      const fallbackChild = await prisma.user.findFirst({
+      // Pick child with most data (schedules) as fallback
+      const allChildren = await prisma.user.findMany({
         where: { role: 'child', isActive: true },
-        select: { id: true },
+        select: { id: true, _count: { select: { schedules: true } } },
+        orderBy: { createdAt: 'asc' },
       })
+      const fallbackChild = allChildren.sort((a, b) => (b._count?.schedules ?? 0) - (a._count?.schedules ?? 0))[0] ?? null
       if (!fallbackChild) {
         return { markup: '<div class="layout"><div class="title_bar"><span class="title">GRIP</span><span class="instance">Geen kind geconfigureerd</span></div></div>' }
       }
@@ -354,7 +542,7 @@ async function validateTrmnlTokenAny(token: string): Promise<boolean> {
   return false
 }
 
-async function buildMarkup(childId: string) {
+async function buildMarkup(childId: string, overrideDashboard?: Dashboard) {
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
@@ -404,12 +592,52 @@ async function buildMarkup(childId: string) {
     return h * 60 + m > nowMinutes
   })
 
+  // ── Custom dashboard rendering ─────────────────────────────
+  const streakDays = await getStreak(childId)
+  const currentActivity = current ?? upcoming
+
+  const blockData: BlockData = {
+    activities: activities.map(a => ({ id: a.id, title: a.title, icon: a.icon, startTime: a.startTime, durationMinutes: a.durationMinutes })),
+    balance, earnedToday, streakDays,
+    allRewards: allRewards.map(r => ({ id: r.id, title: r.title, costTokens: r.costTokens })),
+    nextReward: nextReward ? { title: nextReward.title, costTokens: nextReward.costTokens } : null,
+    currentActivity: currentActivity ? { title: currentActivity.title, icon: currentActivity.icon, startTime: currentActivity.startTime, durationMinutes: currentActivity.durationMinutes } : null,
+    isCurrent: !!current,
+    lastEmotion, name, now,
+  }
+
+  // Check for custom dashboards in Redis
+  let customDashboard = overrideDashboard
+  if (!customDashboard) {
+    const indexRaw = await redis.get(`trmnl-dashboards:${childId}`)
+    if (indexRaw) {
+      const index: string[] = JSON.parse(indexRaw)
+      if (index.length > 0) {
+        const raw = await redis.get(`trmnl-dashboard:${childId}:${index[0]}`)
+        if (raw) customDashboard = JSON.parse(raw)
+      }
+    }
+  }
+
+  // If custom dashboard exists, use its blocks
+  if (customDashboard && customDashboard.blocks.length > 0) {
+    const blocksHtml = customDashboard.blocks.map(b => `<div class="content" style="margin-bottom:8px">${renderBlock(b.type as BlockType, blockData)}</div>`).join('')
+    const layoutClass = customDashboard.layout === 'half_vertical' ? 'layout--half' : customDashboard.layout === 'quadrant' ? 'layout--quadrant' : ''
+    const customMarkup = `<div class="layout ${layoutClass}">
+  <div class="columns"><div class="column">
+    ${blocksHtml}
+  </div></div>
+  <div class="title_bar"><span class="title">GRIP</span><span class="instance">${formatDate(now)}</span></div>
+</div>`
+    return { markup: customMarkup, markup_half_vertical: customMarkup, markup_quadrant: customMarkup }
+  }
+
+  // ── Default layouts (unchanged) ───────────────────────────
+
   const EMOTION_ICON: Record<string, string> = {
     great: '😄', good: '😊', okay: '😐', sad: '😢', angry: '😤',
   }
 
-  // Bouw monochrome voortgangsbalk met doelen
-  // E-ink: alleen █ ░ ▓ en ASCII-tekens
   function rewardProgressBar(bal: number, rewards: typeof allRewards): string {
     if (rewards.length === 0) return `⭐ ${bal} tokens`
     const maxCost = rewards[rewards.length - 1].costTokens
@@ -417,7 +645,6 @@ async function buildMarkup(childId: string) {
     const filledWidth = Math.min(Math.round((bal / maxCost) * barWidth), barWidth)
     let bar = ''
     for (let i = 0; i < barWidth; i++) {
-      // Check if a reward milestone falls at this position
       const milestone = rewards.find(r => {
         const pos = Math.round((r.costTokens / maxCost) * barWidth)
         return pos === i + 1
@@ -433,7 +660,6 @@ async function buildMarkup(childId: string) {
 
   const progressBar = rewardProgressBar(balance, allRewards)
 
-  // Doelen-legenda voor half-vertical
   const goalsLegend = allRewards.map(r => {
     const reached = balance >= r.costTokens
     return `<div class="item"><span class="label">${reached ? '◆' : '◇'} ${r.title}</span><span class="value">${r.costTokens} ⭐</span></div>`
@@ -476,7 +702,6 @@ async function buildMarkup(childId: string) {
 </div>`
 
   // ── Half vertical: Token voortgang met doelen ──────────────
-  const streakDays = await getStreak(childId)
   const markup_half_vertical = `<div class="layout layout--half">
   <div class="columns">
     <div class="column">
@@ -501,7 +726,6 @@ async function buildMarkup(childId: string) {
 </div>`
 
   // ── Quadrant: Nu Doen ───────────────────────────────────────
-  const currentActivity = current ?? upcoming
   const markup_quadrant = `<div class="layout layout--quadrant">
   <div class="columns">
     <div class="column">

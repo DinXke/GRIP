@@ -139,6 +139,20 @@ function IconRecipe({ size = 28, strokeWidth = 2.5 }: { size?: number; strokeWid
   )
 }
 
+// TRMNL Editor-icoon — e-ink scherm/monitor
+function IconTrmnlEditor({ size = 28, strokeWidth = 2.5 }: { size?: number; strokeWidth?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} aria-hidden="true">
+      <rect x="4" y="4" width="24" height="17" rx="2" stroke="currentColor" />
+      <path d="M12 25H20" stroke="currentColor" />
+      <path d="M16 21V25" stroke="currentColor" />
+      <path d="M9 9H23" stroke="currentColor" />
+      <path d="M9 12H18" stroke="currentColor" />
+      <path d="M9 15H14" stroke="currentColor" />
+    </svg>
+  )
+}
+
 // Gebruikers-icoon — personen groep
 function IconUsers({ size = 28, strokeWidth = 2.5 }: { size?: number; strokeWidth?: number }) {
   return (
@@ -203,6 +217,7 @@ const PARENT_LINKS = [
   { to: '/dashboard/money', label: 'Spaarpotje', Icon: IconMoney, roles: ['parent', 'admin'] },
   { to: '/dashboard/recipes', label: 'Recepten', Icon: IconRecipe, roles: ['parent', 'admin'] },
   { to: '/dashboard/system', label: 'Systeem', Icon: IconSystem, roles: ['admin'] },
+  { to: '/dashboard/trmnl-editor', label: 'TRMNL Editor', Icon: IconTrmnlEditor, roles: ['admin'] },
   { to: '/dashboard/users', label: 'Gebruikers', Icon: IconUsers, roles: ['admin'] },
   { to: '/dashboard/help', label: 'Help', Icon: IconHelp, roles: ['parent', 'admin', 'caregiver'] },
   { to: '/dashboard/settings', label: 'Instellingen', Icon: IconSettings, roles: ['parent', 'admin'] },
