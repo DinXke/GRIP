@@ -777,6 +777,13 @@ export default function ExercisesPage() {
                   sub="Woordpuzzels, woordzoeker, zinnen bouwen..."
                   color="#7BAFA3"
                 />
+                <GamesLink
+                  to="/app/lateralisatie"
+                  emoji="🧭"
+                  title="Links & Rechts"
+                  sub="Spiegelbeelden, richtingen, lichaamsdelen..."
+                  color="#9B7CC8"
+                />
               </motion.div>
             )}
 
