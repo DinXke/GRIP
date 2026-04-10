@@ -310,9 +310,17 @@ export function SystemPage() {
           ))}
         </div>
         <div className="flex gap-3 flex-wrap">
-          <a
-            href="/api/trmnl/plugin.zip"
-            download="grip-trmnl-plugin.zip"
+          <button
+            onClick={async () => {
+              const res = await fetch('/api/trmnl/plugin.zip')
+              const blob = await res.blob()
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = 'grip-trmnl-plugin.zip'
+              a.click()
+              URL.revokeObjectURL(url)
+            }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-medium hover:opacity-90"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -321,7 +329,7 @@ export function SystemPage() {
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
             Plugin ZIP downloaden
-          </a>
+          </button>
           <a
             href="/api/trmnl/markup"
             target="_blank"
