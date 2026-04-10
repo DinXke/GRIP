@@ -1453,9 +1453,9 @@ function SpellingBee({
       <GameHeader title="Spellingbij" round={round + 1} totalRounds={TOTAL_ROUNDS} score={score} onBack={onBack} />
       <AnimatePresence>{showSuccess && <SuccessOverlay />}</AnimatePresence>
 
-      <div className="flex-1 overflow-auto flex flex-col items-center justify-between px-4 pb-4 pt-4 gap-4">
+      <div className="flex-1 overflow-auto flex flex-col items-center justify-center px-4 pt-2 gap-3" style={{ paddingBottom: 180 }}>
         {/* Emoji + audio */}
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-2">
           <motion.div
             className="text-7xl"
             animate={shake ? { x: [-8, 8, -6, 6, -3, 3, 0] } : {}}
@@ -1509,11 +1509,12 @@ function SpellingBee({
           })}
         </motion.div>
 
-        {/* Toetsenbord */}
-        <div className="w-full max-w-md flex flex-col gap-1.5">
+        {/* Toetsenbord — fixed onderaan */}
+        <div className="fixed bottom-0 left-0 right-0 z-30 w-full max-w-md mx-auto flex flex-col gap-1 px-2 pb-2 pt-1" style={{ background: 'var(--bg-primary)' }}>
           {KEYBOARD_ROWS.map((row, ri) => (
             <div key={ri} className="flex justify-center gap-1">
-              {ri === 2 && <div style={{ width: 20 }} />}
+              {ri === 1 && <div style={{ width: 10 }} />}
+              {ri === 2 && <div style={{ width: 30 }} />}
               {row.map((letter) => (
                 <motion.button
                   key={letter}
@@ -1558,7 +1559,7 @@ function SpellingBee({
             </div>
           ))}
         </div>
-      </div>
+      </div> {/* einde keyboard fixed */}
     </div>
   )
 }

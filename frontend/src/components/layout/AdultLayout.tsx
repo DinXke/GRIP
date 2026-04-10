@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   IconHome, IconExercise, IconTokens, IconCommunication, IconDossier, IconSettings
 } from '../icons/NavIcons'
@@ -50,7 +51,7 @@ function IconCaregivers({ size = 28, strokeWidth = 2.5 }: { size?: number; strok
   )
 }
 import { useAuthStore } from '../../stores/authStore'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 
 // Kalender-icoon voor schema's
 function IconCalendar({ size = 28, strokeWidth = 2.5 }: { size?: number; strokeWidth?: number }) {
@@ -222,66 +223,123 @@ export function AdultLayout() {
   const { user, logout } = useAuthStore()
   const sidebarLinks = PARENT_LINKS.filter(l => l.roles.includes(user?.role ?? ''))
   const navigate = useNavigate()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const location = useLocation()
+
+  // Sluit menu bij navigatie
+  useEffect(() => { setMobileMenuOpen(false) }, [location.pathname])
 
   const handleLogout = async () => {
     await logout()
     navigate('/login', { replace: true })
   }
 
+  const SidebarContent = () => (
+    <>
+      {/* Logo */}
+      <div className="px-3 mb-6">
+        <h1 className="font-display font-bold text-white text-xl">GRIP</h1>
+        <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
+          {user?.name ?? 'Dashboard'}
+        </p>
+      </div>
+
+      {/* Navigatielinks */}
+      <nav className="flex-1 flex flex-col gap-0.5">
+        {sidebarLinks.map(({ to, label, Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === '/dashboard'}
+            onClick={() => setMobileMenuOpen(false)}
+            className={({ isActive }) =>
+              `sidebar-link flex items-center gap-3 ${isActive ? 'active' : ''}`
+            }
+          >
+            <Icon size={18} strokeWidth={2.5} />
+            <span className="text-sm">{label}</span>
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Uitloggen */}
+      <button
+        onClick={handleLogout}
+        className="sidebar-link flex items-center gap-3 text-sm mt-2 border-none bg-transparent w-full text-left"
+        style={{ color: 'rgba(255,255,255,0.5)' }}
+      >
+        <svg width="18" height="18" viewBox="0 0 32 32" fill="none" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 16H28M28 16L23 11M28 16L23 21" stroke="currentColor" />
+          <path d="M20 8V6C20 4.9 19.1 4 18 4H6C4.9 4 4 4.9 4 6V26C4 27.1 4.9 28 6 28H18C19.1 28 20 27.1 20 26V24" stroke="currentColor" />
+        </svg>
+        Uitloggen
+      </button>
+    </>
+  )
+
   return (
     <div className="flex h-[100dvh] bg-surface">
-      {/* Sidebar */}
+      {/* Desktop sidebar */}
       <aside
         className="sidebar hidden md:flex flex-col py-6 px-3 gap-1 border-r"
         style={{ borderColor: 'rgba(255,255,255,0.08)' }}
         aria-label="Zijbalk"
       >
-        {/* Logo */}
-        <div className="px-3 mb-6">
-          <h1 className="font-display font-bold text-white text-xl">GRIP</h1>
-          <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            {user?.name ?? 'Dashboard'}
-          </p>
-        </div>
-
-        {/* Navigatielinks */}
-        <nav className="flex-1 flex flex-col gap-0.5">
-          {sidebarLinks.map(({ to, label, Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/dashboard'}
-              className={({ isActive }) =>
-                `sidebar-link flex items-center gap-3 ${isActive ? 'active' : ''}`
-              }
-            >
-              <Icon size={18} strokeWidth={2.5} />
-              <span className="text-sm">{label}</span>
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Uitloggen */}
-        <button
-          onClick={handleLogout}
-          className="sidebar-link flex items-center gap-3 text-sm mt-2 border-none bg-transparent w-full text-left"
-          style={{ color: 'rgba(255,255,255,0.5)' }}
-        >
-          <svg width="18" height="18" viewBox="0 0 32 32" fill="none" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 16H28M28 16L23 11M28 16L23 21" stroke="currentColor" />
-            <path d="M20 8V6C20 4.9 19.1 4 18 4H6C4.9 4 4 4.9 4 6V26C4 27.1 4.9 28 6 28H18C19.1 28 20 27.1 20 26V24" stroke="currentColor" />
-          </svg>
-          Uitloggen
-        </button>
+        <SidebarContent />
       </aside>
+
+      {/* Mobile overlay menu */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/50 md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            {/* Slide-in menu */}
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="sidebar fixed left-0 top-0 bottom-0 z-50 w-[260px] flex flex-col py-6 px-3 gap-1 md:hidden"
+              style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <SidebarContent />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto">
+        {/* Mobile top bar */}
+        <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3" style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)' }}>
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="p-2 rounded-lg"
+            style={{ background: 'var(--bg-surface)' }}
+            aria-label="Menu openen"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <span className="font-display font-bold text-ink text-lg">GRIP</span>
+          <span className="text-xs text-ink-muted ml-auto">{user?.name}</span>
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
-          className="p-6 max-w-5xl mx-auto"
+          className="p-4 md:p-6 max-w-5xl mx-auto"
         >
           <Outlet />
         </motion.div>
