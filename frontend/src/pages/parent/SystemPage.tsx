@@ -138,16 +138,28 @@ function TrmnlPanel() {
           <span className="w-6 h-6 rounded-full bg-accent/10 text-accent font-bold text-xs flex items-center justify-center flex-shrink-0">2</span>
           <p className="font-semibold text-ink text-sm">Kind kiezen voor het scherm</p>
         </div>
-        {children.length > 1 ? (
-          <div className="ml-8">
+        <div className="ml-8 space-y-2">
+          {children.length > 1 && (
             <select value={childId} onChange={e => setSelectedChildId(e.target.value)}
               className="px-3 py-2 rounded-lg border border-border bg-card text-sm text-ink">
               {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
+          )}
+          <p className="text-xs text-ink-muted">
+            Vul het <strong>Kind ID</strong> in bij TRMNL, of gebruik <code className="px-1 py-0.5 rounded bg-card border border-border font-mono text-[10px]">all</code> om te alterneren.
+          </p>
+          <div className="space-y-1">
+            {children.map(c => (
+              <div key={c.id} className="flex items-center gap-2 text-xs">
+                <span className="font-medium text-ink">{c.name}:</span>
+                <code className="px-1.5 py-0.5 rounded bg-card border border-border font-mono text-[10px] text-ink-muted select-all">{c.id}</code>
+                <button onClick={() => copyToClipboard(c.id, `child-${c.id}`)} className={copyBtnCls}>
+                  {copied === `child-${c.id}` ? '✓' : 'Kopieer'}
+                </button>
+              </div>
+            ))}
           </div>
-        ) : (
-          <p className="text-xs text-ink-muted ml-8">Scherm toont data van <strong>{childName}</strong></p>
-        )}
+        </div>
       </div>
 
       {/* Stap 3: Waardes voor TRMNL instellingen */}

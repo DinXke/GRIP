@@ -222,9 +222,11 @@ export async function trmnlRoutes(fastify: FastifyInstance) {
   })
 
   // ── POST /api/trmnl/markup — Markup voor TRMNL plugin ────────
-  // TRMNL stuurt POST met JSON body { user_uuid, api_key?, ... }
+  // TRMNL stuurt POST met JSON body { user_uuid, api_key?, child_id?, ... }
+  // child_id kan via TRMNL custom field ingesteld worden
+  // "all" of leeg = alterneer tussen kinderen bij elk request
   fastify.post('/markup', async (request, reply) => {
-    const body = request.body as { user_uuid?: string; api_key?: string }
+    const body = request.body as { user_uuid?: string; api_key?: string; child_id?: string }
     const userUuid = body?.user_uuid
 
     // Auth via user_uuid (TRMNL identifier gekoppeld aan kind)
@@ -232,29 +234,53 @@ export async function trmnlRoutes(fastify: FastifyInstance) {
       ? await prisma.trmnlDevice.findFirst({ where: { userUuid, isActive: true } })
       : null
 
-    if (!device) {
-      // Fallback: gebruik de eerste actieve child (development mode)
-      // Pick child with most data (schedules) as fallback
+    // Determine which child to show
+    let targetChildId: string | null = null
+
+    // 1. Explicit child_id from TRMNL settings
+    if (body?.child_id && body.child_id !== 'all' && body.child_id !== '') {
+      targetChildId = body.child_id
+    }
+    // 2. Linked device
+    else if (device) {
+      targetChildId = device.childId
+    }
+
+    // 3. Fallback or alternation
+    if (!targetChildId) {
       const allChildren = await prisma.user.findMany({
         where: { role: 'child', isActive: true },
-        select: { id: true, _count: { select: { schedules: true } } },
+        select: { id: true },
         orderBy: { createdAt: 'asc' },
       })
-      const fallbackChild = allChildren.sort((a, b) => (b._count?.schedules ?? 0) - (a._count?.schedules ?? 0))[0] ?? null
-      if (!fallbackChild) {
+      if (allChildren.length === 0) {
         return { markup: '<div class="layout"><div class="title_bar"><span class="title">GRIP</span><span class="instance">Geen kind geconfigureerd</span></div></div>' }
       }
-      return buildMarkup(fallbackChild.id)
+
+      // Alternation: rotate based on current request count (stored in Redis)
+      if (allChildren.length > 1 && (!body?.child_id || body.child_id === 'all')) {
+        const counter = await redis.incr('trmnl-rotation-counter')
+        targetChildId = allChildren[(counter - 1) % allChildren.length].id
+      } else {
+        targetChildId = allChildren[0].id
+      }
     }
 
-    // Validate api_key from body or Bearer token from Authorization header
+    if (!targetChildId) {
+      return { markup: '<div class="layout"><div class="title_bar"><span class="title">GRIP</span><span class="instance">Fout</span></div></div>' }
+    }
+
+    // Validate api_key if one is stored — skip check if no token configured
     const apiKey = body?.api_key ?? extractBearerToken(request.headers.authorization)
-    const storedToken = await redis.get(`trmnl-token:${device.childId}`)
-    if (storedToken && (!apiKey || apiKey !== storedToken)) {
-      return reply.status(403).send({ error: 'Ongeldig TRMNL API token' })
+    if (apiKey) {
+      // Token provided — validate it
+      const storedToken = await redis.get(`trmnl-token:${targetChildId}`)
+      if (storedToken && apiKey !== storedToken) {
+        return reply.status(403).send({ error: 'Ongeldig TRMNL API token' })
+      }
     }
 
-    return buildMarkup(device.childId)
+    return buildMarkup(targetChildId)
   })
 
   // ── GET /api/trmnl/markup — Fallback voor browser preview ─────
@@ -324,7 +350,7 @@ polling_verb: POST
 polling_headers:
   Content-Type: application/json
   Authorization: "Bearer {{api_key}}"
-polling_body: '{"user_uuid":"{{user_uuid}}","api_key":"{{api_key}}"}'
+polling_body: '{"user_uuid":"{{user_uuid}}","api_key":"{{api_key}}","child_id":"{{child_id}}"}'
 refresh_rate: 900
 custom_fields:
   - keyname: grip_url
@@ -344,7 +370,13 @@ custom_fields:
     name: "API Key"
     placeholder: "Genereer via GRIP admin -> TRMNL -> Token genereren"
     hint: "Beveiligingstoken voor toegang tot de markup-API"
-    required: true`,
+    required: true
+  - keyname: child_id
+    field_type: text
+    name: "Kind ID"
+    placeholder: "all"
+    hint: "Kind-ID uit GRIP, of 'all' om te alterneren tussen kinderen"
+    required: false`,
 
       'full.liquid': `<div class="layout">
   <div class="columns"><div class="column">
@@ -619,17 +651,17 @@ async function buildMarkup(childId: string, overrideDashboard?: Dashboard) {
     }
   }
 
-  // If custom dashboard exists, use its blocks
+  // If custom dashboard exists, use its blocks for the full layout only
+  // Keep default half/quadrant layouts for compatibility
+  let customFullMarkup: string | null = null
   if (customDashboard && customDashboard.blocks.length > 0) {
     const blocksHtml = customDashboard.blocks.map(b => `<div class="content" style="margin-bottom:8px">${renderBlock(b.type as BlockType, blockData)}</div>`).join('')
-    const layoutClass = customDashboard.layout === 'half_vertical' ? 'layout--half' : customDashboard.layout === 'quadrant' ? 'layout--quadrant' : ''
-    const customMarkup = `<div class="layout ${layoutClass}">
+    customFullMarkup = `<div class="layout">
   <div class="columns"><div class="column">
     ${blocksHtml}
   </div></div>
   <div class="title_bar"><span class="title">GRIP</span><span class="instance">${formatDate(now)}</span></div>
 </div>`
-    return { markup: customMarkup, markup_half_vertical: customMarkup, markup_quadrant: customMarkup }
   }
 
   // ── Default layouts (unchanged) ───────────────────────────
@@ -747,7 +779,11 @@ async function buildMarkup(childId: string, overrideDashboard?: Dashboard) {
   </div>
 </div>`
 
-  return { markup, markup_half_vertical, markup_quadrant }
+  return {
+    markup: customFullMarkup ?? markup,
+    markup_half_vertical,
+    markup_quadrant,
+  }
 }
 
 async function getStreak(childId: string): Promise<number> {
