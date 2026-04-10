@@ -77,8 +77,9 @@ export async function tokenRoutes(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Geen toegang' })
     }
 
+    // Kind ziet alleen beschikbare beloningen, ouder/admin ziet alles
     const rewards = await prisma.reward.findMany({
-      where: { childId, isAvailable: true },
+      where: { childId, ...(user.role === 'child' ? { isAvailable: true } : {}) },
       orderBy: { sortOrder: 'asc' },
     })
 
