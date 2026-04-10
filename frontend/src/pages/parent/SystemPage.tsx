@@ -4,7 +4,9 @@
  */
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { api } from '../../lib/api'
+import { useMyChildren } from '../../lib/queries'
 
 interface VersionInfo { version: string; uptime: number }
 interface UpdateCheck {
@@ -30,6 +32,221 @@ function formatUptime(seconds: number): string {
   if (d > 0) return `${d} dag${d !== 1 ? 'en' : ''} ${h}u`
   if (h > 0) return `${h}u ${m}m`
   return `${m} minuten`
+}
+
+// ── TRMNL Configuratiepanel ─────────────────────────────────────
+function TrmnlPanel() {
+  const { data: childrenData } = useMyChildren()
+  const children = childrenData?.children ?? []
+  const [selectedChildId, setSelectedChildId] = useState('')
+  const childId = selectedChildId || children[0]?.id || ''
+  const childName = children.find(c => c.id === childId)?.name ?? 'Kind'
+
+  const [apiKey, setApiKey] = useState<string | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [userUuid, setUserUuid] = useState('')
+  const [linking, setLinking] = useState(false)
+  const [linkDone, setLinkDone] = useState(false)
+  const [copied, setCopied] = useState<string | null>(null)
+
+  const appUrl = window.location.origin
+
+  // Generate API key
+  async function generateApiKey() {
+    setGenerating(true)
+    try {
+      const res = await api.post<{ token: string }>('/api/trmnl/generate-token', { childId })
+      setApiKey(res.token)
+    } catch {}
+    setGenerating(false)
+  }
+
+  // Link TRMNL device
+  async function linkDevice() {
+    if (!userUuid.trim()) return
+    setLinking(true)
+    try {
+      await api.post('/api/trmnl/link', { childId, userUuid: userUuid.trim() })
+      setLinkDone(true)
+      setTimeout(() => setLinkDone(false), 3000)
+    } catch {}
+    setLinking(false)
+  }
+
+  // Copy to clipboard
+  function copyToClipboard(text: string, label: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(label)
+      setTimeout(() => setCopied(null), 2000)
+    })
+  }
+
+  // Download ZIP
+  async function downloadZip() {
+    try {
+      const response = await fetch(`/api/trmnl/plugin.zip?_=${Date.now()}`, { cache: 'no-store' })
+      if (!response.ok) throw new Error()
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.style.display = 'none'
+      a.href = blobUrl
+      a.download = 'grip-trmnl-plugin.zip'
+      document.body.appendChild(a)
+      a.click()
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(blobUrl) }, 5000)
+    } catch {
+      window.open(`/api/trmnl/plugin.zip?_=${Date.now()}`, '_blank')
+    }
+  }
+
+  const inputCls = "w-full px-3 py-2 rounded-lg border border-border bg-surface text-sm text-ink font-mono focus:border-accent focus:outline-none"
+  const copyBtnCls = "px-2 py-1.5 rounded-lg border border-border text-xs font-medium text-ink-muted hover:border-accent hover:text-accent transition-colors flex-shrink-0"
+
+  return (
+    <div className="card p-5 space-y-5">
+      <div>
+        <h2 className="font-semibold text-ink text-lg mb-1">TRMNL E-Paper Display</h2>
+        <p className="text-sm text-ink-muted">
+          Toon de dagplanning en token-voortgang op een TRMNL e-ink scherm.
+        </p>
+      </div>
+
+      {/* Stap 1: ZIP downloaden */}
+      <div className="p-4 rounded-xl bg-surface border border-border space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-accent/10 text-accent font-bold text-xs flex items-center justify-center flex-shrink-0">1</span>
+          <p className="font-semibold text-ink text-sm">Plugin downloaden en importeren</p>
+        </div>
+        <p className="text-xs text-ink-muted ml-8">
+          Download de ZIP → ga naar <strong>usetrmnl.com</strong> → Plugins → Private → Import → upload de ZIP.
+        </p>
+        <div className="ml-8">
+          <button onClick={downloadZip}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Plugin ZIP downloaden
+          </button>
+        </div>
+      </div>
+
+      {/* Stap 2: Kind kiezen */}
+      <div className="p-4 rounded-xl bg-surface border border-border space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-accent/10 text-accent font-bold text-xs flex items-center justify-center flex-shrink-0">2</span>
+          <p className="font-semibold text-ink text-sm">Kind kiezen voor het scherm</p>
+        </div>
+        {children.length > 1 ? (
+          <div className="ml-8">
+            <select value={childId} onChange={e => setSelectedChildId(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-border bg-card text-sm text-ink">
+              {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+        ) : (
+          <p className="text-xs text-ink-muted ml-8">Scherm toont data van <strong>{childName}</strong></p>
+        )}
+      </div>
+
+      {/* Stap 3: Waardes voor TRMNL instellingen */}
+      <div className="p-4 rounded-xl bg-surface border border-border space-y-4">
+        <div className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-accent/10 text-accent font-bold text-xs flex items-center justify-center flex-shrink-0">3</span>
+          <p className="font-semibold text-ink text-sm">Waardes invullen in TRMNL plugin-instellingen</p>
+        </div>
+
+        <div className="ml-8 space-y-3">
+          {/* GRIP Server URL */}
+          <div>
+            <label className="text-xs font-medium text-ink-muted mb-1 block">GRIP Server URL</label>
+            <div className="flex gap-2">
+              <input value={appUrl} readOnly className={inputCls} />
+              <button onClick={() => copyToClipboard(appUrl, 'url')} className={copyBtnCls}>
+                {copied === 'url' ? '✓' : 'Kopieer'}
+              </button>
+            </div>
+          </div>
+
+          {/* TRMNL User UUID */}
+          <div>
+            <label className="text-xs font-medium text-ink-muted mb-1 block">TRMNL User UUID</label>
+            <p className="text-xs text-ink-muted mb-1">
+              Vind je op <strong>usetrmnl.com</strong> → Account → API. Of laat leeg (wordt automatisch meegegeven door TRMNL).
+            </p>
+            <div className="flex gap-2">
+              <input
+                value={userUuid}
+                onChange={e => setUserUuid(e.target.value)}
+                placeholder="bv. abc123-def456-..."
+                className={inputCls}
+              />
+              <button onClick={linkDevice} disabled={!userUuid.trim() || linking}
+                className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium disabled:opacity-50 flex-shrink-0">
+                {linkDone ? '✓ Gekoppeld' : linking ? '...' : 'Koppel'}
+              </button>
+            </div>
+          </div>
+
+          {/* API Key */}
+          <div>
+            <label className="text-xs font-medium text-ink-muted mb-1 block">API Key</label>
+            <p className="text-xs text-ink-muted mb-1">
+              Beveiligingstoken zodat alleen jouw TRMNL het scherm kan ophalen.
+            </p>
+            {apiKey ? (
+              <div className="flex gap-2">
+                <input value={apiKey} readOnly className={inputCls} />
+                <button onClick={() => copyToClipboard(apiKey, 'key')} className={copyBtnCls}>
+                  {copied === 'key' ? '✓' : 'Kopieer'}
+                </button>
+              </div>
+            ) : (
+              <button onClick={generateApiKey} disabled={generating || !childId}
+                className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium disabled:opacity-50">
+                {generating ? 'Genereren...' : 'API Key genereren'}
+              </button>
+            )}
+            {apiKey && (
+              <p className="text-[10px] text-ink-muted mt-1">
+                Bewaar deze key — kopieer hem naar het "API Key" veld in de TRMNL plugin-instellingen. Bij een nieuwe generatie wordt de oude ongeldig.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Stap 4: Schermvoorbeelden */}
+      <div className="p-4 rounded-xl bg-surface border border-border space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-accent/10 text-accent font-bold text-xs flex items-center justify-center flex-shrink-0">4</span>
+          <p className="font-semibold text-ink text-sm">Scherm toewijzen en testen</p>
+        </div>
+        <p className="text-xs text-ink-muted ml-8">
+          Wijs de plugin toe aan je apparaat in TRMNL. Klik "Forceer verversen" om te testen.
+        </p>
+        <div className="ml-8 flex gap-2">
+          <a href="/api/trmnl/markup" target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm font-medium text-ink hover:bg-card">
+            Preview bekijken
+          </a>
+        </div>
+        <div className="ml-8 grid grid-cols-3 gap-2 text-xs text-ink-muted">
+          {[
+            { label: 'Full', desc: 'Dagplanning + tokens' },
+            { label: 'Half', desc: 'Voortgang + streak' },
+            { label: 'Quadrant', desc: 'Huidige activiteit' },
+          ].map(({ label, desc }) => (
+            <div key={label} className="text-center p-2 bg-card rounded-lg border border-border">
+              <p className="font-medium text-ink mb-0.5">{label}</p>
+              <p className="text-[10px] leading-tight">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function SystemPage() {
@@ -98,6 +315,21 @@ export function SystemPage() {
   }
 
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
+
+  // ── Backup list ─────────────────────────────────────────────
+  const [backups, setBackups] = useState<{name: string; sizeBytes: number; date: string}[]>([])
+  const [backupsLoading, setBackupsLoading] = useState(false)
+
+  async function loadBackups() {
+    setBackupsLoading(true)
+    try {
+      const res = await api.get<{ backups: any[] }>('/api/admin/system/backups')
+      setBackups(res.backups ?? [])
+    } catch {}
+    setBackupsLoading(false)
+  }
+
+  useEffect(() => { loadBackups() }, [])
 
   const UPGRADE_STEPS = [
     'Pre-upgrade backup maken',
@@ -289,87 +521,7 @@ export function SystemPage() {
       </div>
 
       {/* TRMNL E-Paper Plugin */}
-      <div className="card p-5">
-        <h2 className="font-semibold text-ink mb-1">TRMNL E-Paper Display</h2>
-        <p className="text-sm text-ink-muted mb-4">
-          Toon de dagplanning en token-voortgang van je kind op een TRMNL e-ink scherm in de keuken.
-        </p>
-        <div className="space-y-3 mb-4">
-          {[
-            { step: '1', text: 'Download de Plugin ZIP hieronder' },
-            { step: '2', text: 'Ga naar usetrmnl.com → Plugins → Private → Import → upload de ZIP' },
-            { step: '3', text: 'Vul je GRIP Server URL in bij de plugin-instellingen' },
-            { step: '4', text: 'Wijs de plugin toe aan je TRMNL apparaat' },
-          ].map(({ step, text }) => (
-            <div key={step} className="flex items-start gap-3 text-sm">
-              <span className="w-6 h-6 rounded-full bg-accent/10 text-accent font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
-                {step}
-              </span>
-              <span className="text-ink-muted">{text}</span>
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-3 flex-wrap">
-          <button
-            onClick={async () => {
-              try {
-                // Bypass service worker via cache: 'no-store'
-                const response = await fetch(`/api/trmnl/plugin.zip?_=${Date.now()}`, { cache: 'no-store' })
-                if (!response.ok) throw new Error('Download mislukt')
-                const blob = await response.blob()
-                const blobUrl = URL.createObjectURL(blob)
-                // Use a temporary link with download attribute
-                const a = document.createElement('a')
-                a.style.display = 'none'
-                a.href = blobUrl
-                a.download = 'grip-trmnl-plugin.zip'
-                a.setAttribute('type', 'application/zip')
-                document.body.appendChild(a)
-                a.click()
-                // Cleanup after delay (Android needs time)
-                setTimeout(() => {
-                  document.body.removeChild(a)
-                  URL.revokeObjectURL(blobUrl)
-                }, 5000)
-              } catch (e) {
-                // Fallback: open in new tab (browser will download due to Content-Disposition)
-                window.open(`/api/trmnl/plugin.zip?_=${Date.now()}`, '_blank')
-              }
-            }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-medium hover:opacity-90"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Plugin ZIP downloaden
-          </button>
-          <a
-            href="/api/trmnl/markup"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-ink hover:bg-surface"
-          >
-            👁️ Preview bekijken
-          </a>
-        </div>
-        <div className="mt-4 p-3 rounded-xl bg-surface border border-border">
-          <p className="text-xs font-medium text-ink mb-2">Schermen (monochroom e-ink):</p>
-          <div className="grid grid-cols-3 gap-2 text-xs text-ink-muted">
-            {[
-              { label: 'Full', desc: 'Dagplanning + tokens + emotie' },
-              { label: 'Half', desc: 'Token-voortgang + streak' },
-              { label: 'Quadrant', desc: 'Huidige activiteit' },
-            ].map(({ label, desc }) => (
-              <div key={label} className="text-center p-2 bg-card rounded-lg border border-border">
-                <p className="font-medium text-ink mb-0.5">{label}</p>
-                <p className="text-[10px] leading-tight">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <TrmnlPanel />
 
       {/* App versie info */}
       <div className="card p-5">
