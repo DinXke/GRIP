@@ -569,7 +569,7 @@ function WordScramble({
       <GameHeader title="Woordpuzzel" round={round + 1} totalRounds={TOTAL_ROUNDS} score={score} onBack={onBack} onSkip={handleSkipWordScramble} />
       <AnimatePresence>{showSuccess && <SuccessOverlay />}</AnimatePresence>
 
-      <div className="flex-1 overflow-auto flex flex-col items-center justify-center px-5 pb-8 gap-6">
+      <div className="flex-1 overflow-auto flex flex-col items-center justify-center px-5 pb-24 gap-6">
         {/* Hint */}
         <AnimatePresence>
           {showHint && !correct && (
@@ -1085,7 +1085,7 @@ function LetterMemory({
   return (
     <div className="fixed inset-0 z-40 flex flex-col" style={{ background: 'var(--bg-primary)' }}>
       <GameHeader title="Letter Memory" onBack={onBack} onSkip={handleSkipLetterMemory} />
-      <div className="flex-1 overflow-auto px-4 pb-4">
+      <div className="flex-1 overflow-auto px-4 pb-24">
       <p className="text-center font-body text-ink-muted text-sm mb-3">
         Zoek de paren: lettercombinatie + woord met ontbrekende letters
       </p>
@@ -1288,7 +1288,7 @@ function SentenceBuilder({
       <GameHeader title="Zinnen bouwen" round={round + 1} totalRounds={TOTAL_ROUNDS} score={score} onBack={onBack} onSkip={handleSkipSentenceBuilder} />
       <AnimatePresence>{showSuccess && <SuccessOverlay />}</AnimatePresence>
 
-      <div className="flex-1 overflow-auto flex flex-col px-5 pb-8 gap-5 pt-4">
+      <div className="flex-1 overflow-auto flex flex-col px-5 pb-24 gap-5 pt-4">
         {/* Geplaatste woorden (de zin die gebouwd wordt) */}
         <div
           className="min-h-[80px] rounded-2xl p-4 flex flex-wrap gap-2 items-start"
@@ -1782,7 +1782,7 @@ function CategorySort({
       />
       <AnimatePresence>{showSuccess && <SuccessOverlay />}</AnimatePresence>
 
-      <div className="flex-1 overflow-auto flex flex-col px-4 pb-8 gap-5 pt-3">
+      <div className="flex-1 overflow-auto flex flex-col px-4 pb-24 gap-5 pt-3">
         {/* Categorieen als knoppen */}
         <div className={`grid gap-3 ${categories.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
           {categories.map((cat) => {
@@ -2094,7 +2094,7 @@ function WordCircle({
       />
       <AnimatePresence>{showSuccess && <SuccessOverlay />}</AnimatePresence>
 
-      <div className="flex-1 overflow-auto flex flex-col items-center px-4 pb-8 gap-3 pt-2">
+      <div className="flex-1 overflow-auto flex flex-col items-center px-4 pb-24 gap-3 pt-2">
         {/* Huidig woord dat gevormd wordt */}
         <div
           className="w-full rounded-2xl py-3 text-center font-display font-bold"

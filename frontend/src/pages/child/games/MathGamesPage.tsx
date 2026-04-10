@@ -460,7 +460,7 @@ function NumberMemory({ onBack, difficulty }: GameProps) {
       </p>
 
       {/* Card grid */}
-      <div className="flex-1 overflow-auto px-4 pb-4">
+      <div className="flex-1 overflow-auto px-4 pb-24">
       <div
         className="grid gap-2 flex-1 content-start mx-auto w-full"
         style={{
@@ -571,61 +571,58 @@ function generateBubbleTarget(difficulty: number): { target: number; label: stri
   return { target: t, label: `Tik twee bubbels die samen ${t} maken` }
 }
 
+function makeBubble(id: number, value: number, colors: string[]): Bubble {
+  return {
+    id, value,
+    x: rand(8, 82), y: rand(8, 65),
+    size: rand(52, 68),
+    color: pickRandom(colors),
+    popped: false, shaking: false,
+    speedX: (Math.random() - 0.5) * 0.35,
+    speedY: (Math.random() - 0.5) * 0.25,
+  }
+}
+
 function generateBubbles(target: number, difficulty: number): Bubble[] {
   const count = difficulty === 1 ? 10 : difficulty === 2 ? 14 : 18
   const colors = ['#E8734A', '#7BAFA3', '#F2C94C', '#5B8C5A', '#A8C5D6']
   const bubbles: Bubble[] = []
 
-  // Ensure at least 3-4 valid pairs exist
-  const pairCount = rand(3, 5)
-  for (let i = 0; i < pairCount && bubbles.length < count - 2; i++) {
-    const a = rand(1, target - 1)
-    const b = target - a
-    bubbles.push(
-      {
-        id: bubbles.length,
-        value: a,
-        x: rand(10, 80),
-        y: rand(10, 75),
-        size: rand(54, 72),
-        color: pickRandom(colors),
-        popped: false,
-        shaking: false,
-        speedX: (Math.random() - 0.5) * 0.4,
-        speedY: (Math.random() - 0.5) * 0.3,
-      },
-      {
-        id: bubbles.length + 1,
-        value: b,
-        x: rand(10, 80),
-        y: rand(10, 75),
-        size: rand(54, 72),
-        color: pickRandom(colors),
-        popped: false,
-        shaking: false,
-        speedX: (Math.random() - 0.5) * 0.4,
-        speedY: (Math.random() - 0.5) * 0.3,
-      },
-    )
+  // Genereer gegarandeerd unieke paren die optellen tot target
+  const pairCount = Math.min(rand(3, 5), Math.floor(count / 2))
+  const usedSplits = new Set<string>()
+  for (let i = 0; i < pairCount; i++) {
+    let a: number, b: number
+    let attempts = 0
+    do {
+      a = rand(1, target - 1)
+      b = target - a
+      attempts++
+    } while (usedSplits.has(`${Math.min(a,b)}-${Math.max(a,b)}`) && attempts < 20)
+    usedSplits.add(`${Math.min(a,b)}-${Math.max(a,b)}`)
+    bubbles.push(makeBubble(bubbles.length, a, colors))
+    bubbles.push(makeBubble(bubbles.length, b, colors))
   }
 
-  // Fill rest with random numbers
+  // Vul de rest met getallen die NIET per ongeluk een paar vormen
   while (bubbles.length < count) {
-    bubbles.push({
-      id: bubbles.length,
-      value: rand(1, target + 5),
-      x: rand(10, 80),
-      y: rand(10, 75),
-      size: rand(54, 72),
-      color: pickRandom(colors),
-      popped: false,
-      shaking: false,
-      speedX: (Math.random() - 0.5) * 0.4,
-      speedY: (Math.random() - 0.5) * 0.3,
-    })
+    let val: number
+    let safe = false
+    let tries = 0
+    do {
+      val = rand(1, target + 5)
+      // Check: als target - val ook in de bubbels zit, vermijd
+      const complement = target - val
+      const complementCount = bubbles.filter(b => b.value === complement && !b.popped).length
+      const valCount = bubbles.filter(b => b.value === val && !b.popped).length
+      // Sta toe als complement er niet is, of als val zelf al het complement is (geen extra paar)
+      safe = complement <= 0 || complement > target || complementCount === 0 || tries > 10
+      tries++
+    } while (!safe)
+    bubbles.push(makeBubble(bubbles.length, val, colors))
   }
 
-  return bubbles
+  return shuffle(bubbles).map((b, i) => ({ ...b, id: i }))
 }
 
 function BubblePopMath({ onBack, difficulty }: GameProps) {
@@ -793,7 +790,7 @@ function BubblePopMath({ onBack, difficulty }: GameProps) {
         <ScoreDisplay score={score} />
       </div>
 
-      <div className="flex-1 overflow-auto px-4 pb-4 flex flex-col">
+      <div className="flex-1 overflow-auto px-4 pb-24 flex flex-col">
       <TimerBar timeLeft={timeLeft} maxTime={MAX_TIME} />
 
       <p
@@ -1063,7 +1060,7 @@ function DragEquation({ onBack, difficulty }: GameProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto px-4 pb-4 flex flex-col">
+      <div className="flex-1 overflow-auto px-4 pb-24 flex flex-col">
       {/* Progress dots */}
       <div className="flex gap-1 justify-center mb-6">
         {rounds.map((_, i) => (
@@ -1489,7 +1486,7 @@ function PatternComplete({ onBack, difficulty }: GameProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto px-4 pb-4 flex flex-col">
+      <div className="flex-1 overflow-auto px-4 pb-24 flex flex-col">
       {/* Instruction */}
       <p
         className="font-display font-bold text-center text-xl mb-6"
@@ -1831,7 +1828,7 @@ function FractionPizza({ onBack, difficulty }: GameProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto px-4 pb-4 flex flex-col items-center">
+      <div className="flex-1 overflow-auto px-4 pb-24 flex flex-col items-center">
       {/* Instruction */}
       <motion.div
         key={currentRound}
@@ -2142,7 +2139,7 @@ function SpeedTap({ onBack, difficulty }: GameProps) {
         <ScoreDisplay score={score} />
       </div>
 
-      <div className="flex-1 overflow-auto px-4 pb-4 flex flex-col">
+      <div className="flex-1 overflow-auto px-4 pb-24 flex flex-col">
       <TimerBar timeLeft={timeLeft} maxTime={MAX_TIME} />
 
       {/* Streak indicator */}
