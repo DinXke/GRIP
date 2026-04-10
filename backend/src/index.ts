@@ -14,6 +14,7 @@ import { taskRoutes } from './routes/tasks'
 import { tokenRoutes } from './routes/tokens'
 import { emotionRoutes } from './routes/emotions'
 import { tokenSettingsRoutes, getExtraAllowedOrigins } from './routes/settings'
+import { exerciseRoutes } from './routes/exercises'
 
 const app = Fastify({
   logger: {
@@ -74,6 +75,7 @@ async function main() {
   await app.register(tokenRoutes, { prefix: '/api/tokens' })
   await app.register(emotionRoutes, { prefix: '/api/emotions' })
   await app.register(tokenSettingsRoutes, { prefix: '/api/admin/settings' })
+  await app.register(exerciseRoutes, { prefix: '/api/exercises' })
 
   // ── Graceful shutdown ────────────────────────────────────────
   const shutdown = async (signal: string) => {

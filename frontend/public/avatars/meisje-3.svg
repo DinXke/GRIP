@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Haar (kort, donker) -->
+  <ellipse cx="60" cy="48" rx="30" ry="32" fill="#3D2B1F"/>
+  <!-- Gezicht -->
+  <circle cx="60" cy="50" r="26" fill="#8D5524"/>
+  <!-- Haar top -->
+  <path d="M34 42 Q40 20 60 22 Q80 20 86 42" fill="#3D2B1F"/>
+  <!-- Haar clips -->
+  <rect x="35" y="38" width="10" height="5" rx="2.5" fill="#F2C94C"/>
+  <rect x="75" y="38" width="10" height="5" rx="2.5" fill="#E8734A"/>
+  <!-- Ogen -->
+  <ellipse cx="49" cy="48" rx="5" ry="6" fill="#1A0F00"/>
+  <ellipse cx="71" cy="48" rx="5" ry="6" fill="#1A0F00"/>
+  <circle cx="51" cy="46" r="1.5" fill="white"/>
+  <circle cx="73" cy="46" r="1.5" fill="white"/>
+  <!-- Wangen -->
+  <ellipse cx="41" cy="57" rx="6" ry="4" fill="#C17A3A" opacity="0.4"/>
+  <ellipse cx="79" cy="57" rx="6" ry="4" fill="#C17A3A" opacity="0.4"/>
+  <!-- Neus -->
+  <ellipse cx="60" cy="57" rx="3.5" ry="2.5" fill="#7A4A20"/>
+  <!-- Mond -->
+  <path d="M50 65 Q60 74 70 65" stroke="#5B2A1A" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Tanden -->
+  <path d="M53 65 Q60 70 67 65" fill="white"/>
+  <!-- Lichaam -->
+  <rect x="40" y="79" width="40" height="38" rx="12" fill="#5B8C5A"/>
+  <!-- Ster op kleding -->
+  <path d="M60 87 L62 93 L68 93 L63 97 L65 103 L60 99 L55 103 L57 97 L52 93 L58 93Z" fill="#F2C94C"/>
+</svg>

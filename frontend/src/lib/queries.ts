@@ -175,13 +175,77 @@ export function useDeleteTask() {
 export interface ChildProfile {
   id: string
   name: string
+  role?: string
   avatarUrl?: string | null
+  avatarId?: string | null
+  gender?: string | null
+  dateOfBirth?: string | null
+  isActive?: boolean
+  isPrimary?: boolean
 }
 
+/** Voor het PIN-inlogscherm — alle actieve kinderen */
 export function useChildren() {
   return useQuery({
     queryKey: ['children'],
     queryFn: () => api.get<{ children: ChildProfile[] }>('/api/auth/children'),
+  })
+}
+
+/** Voor ouder-dashboard — alleen gekoppelde kinderen */
+export function useMyChildren() {
+  return useQuery({
+    queryKey: ['my-children'],
+    queryFn: () => api.get<{ children: ChildProfile[] }>('/api/users/my-children'),
+  })
+}
+
+export function useCreateChild() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: {
+      name: string
+      pin: string
+      gender?: string
+      dateOfBirth?: string
+      avatarId?: string
+    }) => api.post<ChildProfile>('/api/users/children', data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-children'] })
+      qc.invalidateQueries({ queryKey: ['children'] })
+    },
+  })
+}
+
+export function useUpdateChild() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string; name?: string; pin?: string; gender?: string; dateOfBirth?: string; avatarId?: string; isActive?: boolean }) =>
+      api.put<ChildProfile>(`/api/users/children/${id}`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-children'] })
+      qc.invalidateQueries({ queryKey: ['children'] })
+    },
+  })
+}
+
+export function useDeleteChild() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/users/children/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-children'] })
+      qc.invalidateQueries({ queryKey: ['children'] })
+    },
+  })
+}
+
+export function useUpdateAvatar() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { avatarId: string; gender?: string }) =>
+      api.patch<{ id: string; avatarId: string; gender: string }>('/api/users/me/avatar', data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['profile'] }),
   })
 }
 

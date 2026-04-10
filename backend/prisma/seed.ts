@@ -49,11 +49,23 @@ async function main() {
       email: CHILD_EMAIL,
       pin: await argon2.hash(CHILD_PIN, { type: argon2.argon2id }),
       role: Role.child,
+      avatarId: 'meisje-1',
+      gender: 'meisje',
     },
   })
   console.log('✅ Kind aangemaakt:', child.name, `(PIN: ${CHILD_PIN})`)
 
-  // Standaard token-configs voor Julie (globale configs, sourceId = null)
+  // Koppel kind aan ouder en admin
+  for (const parentUser of [admin, parent]) {
+    await prisma.parentChild.upsert({
+      where: { parentId_childId: { parentId: parentUser.id, childId: child.id } },
+      update: {},
+      create: { parentId: parentUser.id, childId: child.id, isPrimary: true },
+    })
+  }
+  console.log('✅ Kind gekoppeld aan ouders')
+
+  // Standaard token-configs (globale configs, sourceId = null)
   const defaultConfigs = [
     { sourceType: 'morning_routine' as const, tokensPerCompletion: 3 },
     { sourceType: 'emotion_checkin' as const, tokensPerCompletion: 1 },
@@ -202,6 +214,86 @@ async function main() {
     }
   }
   console.log('✅ Voorbeeldtaken aangemaakt')
+
+  // ── Voorbeeldoefeningen (wiskunde niveau 1-2) ─────────────────
+  const sampleExercises = [
+    // Niveau 1 — optellen tot 10
+    { subject: 'wiskunde', type: 'multiple_choice', difficulty: 1, tags: ['optellen', 'tot10'],
+      questionJson: { question: 'Hoeveel is 3 + 4?', options: ['5', '6', '7', '8'], answer: '7',
+        hints: [{ type: 'text', content: 'Tel op je vingers: 3... en dan nog 4 erbij.' }],
+        explanation: '3 + 4 = 7. Tel: 4, 5, 6, 7!' } },
+    { subject: 'wiskunde', type: 'multiple_choice', difficulty: 1, tags: ['optellen', 'tot10'],
+      questionJson: { question: 'Hoeveel is 5 + 3?', options: ['6', '7', '8', '9'], answer: '8',
+        hints: [{ type: 'text', content: 'Begin bij 5 en tel 3 verder.' }],
+        explanation: '5 + 3 = 8. 5, 6, 7, 8!' } },
+    { subject: 'wiskunde', type: 'multiple_choice', difficulty: 1, tags: ['aftrekken', 'tot10'],
+      questionJson: { question: 'Hoeveel is 9 - 4?', options: ['3', '4', '5', '6'], answer: '5',
+        hints: [{ type: 'text', content: 'Begin bij 9 en tel terug: 8, 7, 6, 5, 4.' }],
+        explanation: '9 - 4 = 5.' } },
+    { subject: 'wiskunde', type: 'multiple_choice', difficulty: 1, tags: ['tellen', 'getallen'],
+      questionJson: { question: 'Welk getal komt na 7?', options: ['6', '7', '8', '9'], answer: '8',
+        hints: [{ type: 'text', content: 'Tel de rij: 5, 6, 7, ... wat komt daarna?' }],
+        explanation: 'Na 7 komt 8!' } },
+    // Niveau 2 — tafels van 2 en 3
+    { subject: 'wiskunde', type: 'multiple_choice', difficulty: 2, tags: ['tafels', 'tafel2'],
+      questionJson: { question: 'Hoeveel is 2 × 6?', options: ['10', '12', '14', '8'], answer: '12',
+        hints: [{ type: 'text', content: 'Denk: 2 groepen van 6. Tel: 6 + 6 = ?' }],
+        explanation: '2 × 6 = 12. Of: 6 + 6 = 12.' } },
+    { subject: 'wiskunde', type: 'multiple_choice', difficulty: 2, tags: ['tafels', 'tafel3'],
+      questionJson: { question: 'Hoeveel is 3 × 4?', options: ['9', '10', '12', '11'], answer: '12',
+        hints: [{ type: 'text', content: 'Denk aan 3 zakjes met elk 4 snoepjes. 4 + 4 + 4 = ?' }],
+        explanation: '3 × 4 = 12. Want 4 + 4 + 4 = 12.' } },
+    { subject: 'wiskunde', type: 'multiple_choice', difficulty: 2, tags: ['tafels', 'tafel5'],
+      questionJson: { question: 'Hoeveel is 5 × 3?', options: ['10', '12', '15', '20'], answer: '15',
+        hints: [{ type: 'text', content: 'Tafels van 5 eindigen altijd op 0 of 5. 5, 10, 15...' }],
+        explanation: '5 × 3 = 15.' } },
+    { subject: 'wiskunde', type: 'multiple_choice', difficulty: 2, tags: ['optellen', 'tot100'],
+      questionJson: { question: 'Hoeveel is 24 + 13?', options: ['35', '36', '37', '38'], answer: '37',
+        hints: [{ type: 'text', content: 'Eerste de tienen: 20 + 10 = 30. Dan de enen: 4 + 3 = 7.' }],
+        explanation: '24 + 13 = 37. Eerst tientallen, dan eenheden.' } },
+    // Niveau 2 — kloklezen
+    { subject: 'wiskunde', type: 'multiple_choice', difficulty: 2, tags: ['kloklezen', 'tijd'],
+      questionJson: { question: 'Het is half drie. Wat is de tijd?', options: ['2:15', '2:30', '3:00', '3:30'], answer: '2:30',
+        hints: [{ type: 'text', content: 'Half drie = halverwege twee en drie = 2:30.' }],
+        explanation: 'Half drie = 2 uur 30 minuten = 2:30.' } },
+    // Niveau 3 — aftrekken groter
+    { subject: 'wiskunde', type: 'multiple_choice', difficulty: 3, tags: ['aftrekken', 'tot100'],
+      questionJson: { question: 'Hoeveel is 56 - 23?', options: ['31', '32', '33', '34'], answer: '33',
+        hints: [{ type: 'text', content: 'Eerst de tienen: 50 - 20 = 30. Dan de enen: 6 - 3 = 3.' }],
+        explanation: '56 - 23 = 33.' } },
+    // Niveau 3 — geld
+    { subject: 'wiskunde', type: 'multiple_choice', difficulty: 3, tags: ['geld', 'rekenen'],
+      questionJson: { question: 'Je hebt €2. Een ijsje kost €1,50. Hoeveel heb je over?', options: ['€0,25', '€0,50', '€0,75', '€1,00'], answer: '€0,50',
+        hints: [{ type: 'text', content: 'Je begint met 200 cent. Trek er 150 cent van af.' }],
+        explanation: '€2,00 - €1,50 = €0,50.' } },
+  ]
+
+  let exercisesCreated = 0
+  for (const ex of sampleExercises) {
+    const exists = await prisma.exercise.findFirst({
+      where: {
+        subject: ex.subject as any,
+        difficulty: ex.difficulty,
+        title: (ex.questionJson as any).question.slice(0, 50),
+      },
+    })
+    if (!exists) {
+      await prisma.exercise.create({
+        data: {
+          subject: ex.subject as any,
+          type: ex.type as any,
+          difficulty: ex.difficulty,
+          title: (ex.questionJson as any).question.slice(0, 80),
+          questionJson: ex.questionJson as any,
+          tags: ex.tags,
+          isAiGenerated: false,
+          isApproved: true,
+        },
+      })
+      exercisesCreated++
+    }
+  }
+  console.log(`✅ ${exercisesCreated} voorbeeldoefeningen aangemaakt`)
 
   console.log('\n🎉 Seed voltooid!')
   console.log(`   Admin: ${ADMIN_EMAIL} / ${ADMIN_PASS}`)

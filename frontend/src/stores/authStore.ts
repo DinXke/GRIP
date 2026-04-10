@@ -93,7 +93,7 @@ export const useAuthStore = create<AuthStore>()(
       },
     }),
     {
-      name: 'julie-auth',
+      name: 'grip-auth',
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({ user: state.user, accessToken: state.accessToken }),
       onRehydrateStorage: () => (state) => {

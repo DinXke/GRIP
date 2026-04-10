@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Pet -->
+  <ellipse cx="60" cy="38" rx="32" ry="14" fill="#E8734A"/>
+  <rect x="28" y="38" width="64" height="8" rx="4" fill="#C45D40"/>
+  <rect x="74" y="34" width="20" height="6" rx="3" fill="#C45D40"/>
+  <!-- Gezicht -->
+  <circle cx="60" cy="54" r="26" fill="#FFD5A8"/>
+  <!-- Oren -->
+  <ellipse cx="34" cy="56" rx="5" ry="7" fill="#FFD5A8"/>
+  <ellipse cx="86" cy="56" rx="5" ry="7" fill="#FFD5A8"/>
+  <!-- Ogen -->
+  <ellipse cx="50" cy="52" rx="5" ry="5.5" fill="#3D3229"/>
+  <ellipse cx="70" cy="52" rx="5" ry="5.5" fill="#3D3229"/>
+  <circle cx="52" cy="50" r="1.5" fill="white"/>
+  <circle cx="72" cy="50" r="1.5" fill="white"/>
+  <!-- Sproeten -->
+  <circle cx="53" cy="59" r="2" fill="#C17A3A" opacity="0.4"/>
+  <circle cx="67" cy="59" r="2" fill="#C17A3A" opacity="0.4"/>
+  <!-- Wangen -->
+  <ellipse cx="41" cy="60" rx="6" ry="4" fill="#F0B090" opacity="0.5"/>
+  <ellipse cx="79" cy="60" rx="6" ry="4" fill="#F0B090" opacity="0.5"/>
+  <!-- Neus -->
+  <ellipse cx="60" cy="59" rx="3" ry="2" fill="#E8A888"/>
+  <!-- Lachende mond -->
+  <path d="M50 68 Q60 78 70 68" stroke="#C45D40" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M54 68 Q60 74 66 68" fill="white"/>
+  <!-- Lichaam -->
+  <rect x="40" y="82" width="40" height="36" rx="12" fill="#5B8C5A"/>
+  <!-- Nummer op shirt -->
+  <text x="60" y="105" font-size="16" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">7</text>
+</svg>

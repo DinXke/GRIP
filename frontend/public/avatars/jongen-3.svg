@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Haar (krullen, donker) -->
+  <ellipse cx="60" cy="46" rx="32" ry="30" fill="#2C1810"/>
+  <!-- Gezicht -->
+  <circle cx="60" cy="50" r="26" fill="#C68642"/>
+  <!-- Krullen detail -->
+  <path d="M34 40 Q36 32 42 36 Q38 28 46 32 Q44 22 54 28 Q52 18 60 22 Q68 18 66 28 Q76 22 74 32 Q82 28 78 36 Q84 32 86 40" stroke="#2C1810" stroke-width="8" stroke-linecap="round" fill="none"/>
+  <!-- Ogen -->
+  <ellipse cx="49" cy="49" rx="5" ry="6" fill="#1A0F00"/>
+  <ellipse cx="71" cy="49" rx="5" ry="6" fill="#1A0F00"/>
+  <circle cx="51" cy="47" r="1.5" fill="white"/>
+  <circle cx="73" cy="47" r="1.5" fill="white"/>
+  <!-- Wangen -->
+  <ellipse cx="41" cy="57" rx="6" ry="4" fill="#A06030" opacity="0.4"/>
+  <ellipse cx="79" cy="57" rx="6" ry="4" fill="#A06030" opacity="0.4"/>
+  <!-- Neus -->
+  <ellipse cx="60" cy="57" rx="3.5" ry="2.5" fill="#8B4513"/>
+  <!-- Mond -->
+  <path d="M50 66 Q60 75 70 66" stroke="#5B2A1A" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Tanden -->
+  <path d="M54 66 Q60 71 66 66" fill="white"/>
+  <!-- Lichaam -->
+  <rect x="40" y="79" width="40" height="38" rx="12" fill="#C17A3A"/>
+  <!-- Print op shirt -->
+  <path d="M52 95 L60 88 L68 95 L65 105 L55 105Z" fill="#F2C94C" opacity="0.8"/>
+</svg>

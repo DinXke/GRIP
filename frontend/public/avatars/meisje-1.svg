@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Haar (achter) -->
+  <ellipse cx="60" cy="52" rx="34" ry="38" fill="#8B4513"/>
+  <!-- Gezicht -->
+  <circle cx="60" cy="52" r="28" fill="#FDBCB4"/>
+  <!-- Haar (zijkant) -->
+  <path d="M32 45 Q28 70 36 85" stroke="#8B4513" stroke-width="12" stroke-linecap="round"/>
+  <path d="M88 45 Q92 70 84 85" stroke="#8B4513" stroke-width="12" stroke-linecap="round"/>
+  <!-- Haar (boven) met krullen -->
+  <path d="M35 40 Q40 22 60 24 Q80 22 85 40" fill="#8B4513"/>
+  <!-- Strik -->
+  <path d="M48 22 Q54 16 60 22 Q54 28 48 22Z" fill="#E8734A"/>
+  <path d="M72 22 Q66 16 60 22 Q66 28 72 22Z" fill="#E8734A"/>
+  <circle cx="60" cy="22" r="4" fill="#C45D40"/>
+  <!-- Ogen -->
+  <ellipse cx="49" cy="50" rx="5" ry="6" fill="#3D3229"/>
+  <ellipse cx="71" cy="50" rx="5" ry="6" fill="#3D3229"/>
+  <circle cx="51" cy="48" r="1.5" fill="white"/>
+  <circle cx="73" cy="48" r="1.5" fill="white"/>
+  <!-- Wangen -->
+  <ellipse cx="42" cy="58" rx="6" ry="4" fill="#F4A99A" opacity="0.6"/>
+  <ellipse cx="78" cy="58" rx="6" ry="4" fill="#F4A99A" opacity="0.6"/>
+  <!-- Neus -->
+  <ellipse cx="60" cy="58" rx="3" ry="2" fill="#F0A090"/>
+  <!-- Mond -->
+  <path d="M50 66 Q60 74 70 66" stroke="#C45D40" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Lichaam -->
+  <rect x="40" y="82" width="40" height="35" rx="12" fill="#E8734A"/>
+  <!-- Kraag -->
+  <path d="M50 82 Q60 90 70 82" stroke="white" stroke-width="2" fill="none"/>
+</svg>

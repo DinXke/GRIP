@@ -31,8 +31,22 @@ function IconTasks({ size = 28, strokeWidth = 2.5 }: { size?: number; strokeWidt
   )
 }
 
+// Kinderen-icoon
+function IconChildren({ size = 28, strokeWidth = 2.5 }: { size?: number; strokeWidth?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} aria-hidden="true">
+      <circle cx="10" cy="10" r="4" stroke="currentColor" />
+      <circle cx="22" cy="10" r="4" stroke="currentColor" />
+      <path d="M4 28C4 23 6.7 20 10 20" stroke="currentColor" />
+      <path d="M28 28C28 23 25.3 20 22 20" stroke="currentColor" />
+      <path d="M13 28C13 24 14.3 22 16 22C17.7 22 19 24 19 28" stroke="currentColor" />
+    </svg>
+  )
+}
+
 const sidebarLinks = [
   { to: '/dashboard', label: 'Overzicht', Icon: IconHome },
+  { to: '/dashboard/children', label: 'Kinderen', Icon: IconChildren },
   { to: '/dashboard/tasks', label: 'Taken', Icon: IconTasks },
   { to: '/dashboard/schedule', label: "Schema's", Icon: IconCalendar },
   { to: '/dashboard/tokens', label: 'Beloningen', Icon: IconTokens },

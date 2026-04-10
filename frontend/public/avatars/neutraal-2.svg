@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Haar (lang, licht) -->
+  <ellipse cx="60" cy="50" rx="32" ry="36" fill="#D4A017"/>
+  <!-- Gezicht -->
+  <circle cx="60" cy="50" r="26" fill="#FFD5A8"/>
+  <!-- Haar voorkant -->
+  <path d="M35 42 Q38 24 60 26 Q82 24 85 42" fill="#D4A017"/>
+  <!-- Paardenstaart strikje -->
+  <circle cx="92" cy="40" r="8" fill="#E8734A" opacity="0.0"/>
+  <path d="M85 35 Q94 30 98 40 Q94 50 85 45" fill="#D4A017"/>
+  <circle cx="85" cy="40" r="5" fill="#E8734A"/>
+  <!-- Ogen (groot en rond) -->
+  <ellipse cx="49" cy="49" rx="6" ry="7" fill="#7BAFA3"/>
+  <ellipse cx="71" cy="49" rx="6" ry="7" fill="#7BAFA3"/>
+  <ellipse cx="49" cy="49" rx="4" ry="5" fill="#2C5F5A"/>
+  <ellipse cx="71" cy="49" rx="4" ry="5" fill="#2C5F5A"/>
+  <circle cx="51" cy="47" r="2" fill="white"/>
+  <circle cx="73" cy="47" r="2" fill="white"/>
+  <!-- Wimpers -->
+  <path d="M43 43 L41 40" stroke="#3D3229" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M46 42 L45 39" stroke="#3D3229" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M65 42 L64 39" stroke="#3D3229" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M68 43 L70 40" stroke="#3D3229" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Wangen -->
+  <ellipse cx="41" cy="57" rx="7" ry="5" fill="#F4A99A" opacity="0.6"/>
+  <ellipse cx="79" cy="57" rx="7" ry="5" fill="#F4A99A" opacity="0.6"/>
+  <!-- Neus -->
+  <path d="M57 57 Q60 60 63 57" stroke="#E8A888" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- Mond -->
+  <path d="M51 65 Q60 73 69 65" stroke="#C45D40" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Lichaam -->
+  <rect x="40" y="79" width="40" height="38" rx="12" fill="#F2C94C"/>
+  <!-- Hart op kleding -->
+  <path d="M60 100 C60 100 50 92 50 87 C50 83 53 81 56 81 C58 81 60 83 60 83 C60 83 62 81 64 81 C67 81 70 83 70 87 C70 92 60 100 60 100Z" fill="#E8734A"/>
+</svg>

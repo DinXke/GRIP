@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../../stores/authStore'
 import {
-  useChildren,
+  useMyChildren,
   useTokenBalance,
   useRewards,
   useCreateReward,
@@ -243,7 +243,7 @@ function GrantTokensPanel({ childId, onDone }: { childId: string; onDone: () => 
 
 export default function RewardsPage() {
   const { user } = useAuthStore()
-  const { data: childrenData } = useChildren()
+  const { data: childrenData } = useMyChildren()
   const children = childrenData?.children ?? []
 
   const [selectedChildId, setSelectedChildId] = useState<string>('')

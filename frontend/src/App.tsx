@@ -16,12 +16,16 @@ const ExercisesPage = lazy(() => import('./pages/child/ExercisesPage'))
 const TokensPage = lazy(() => import('./pages/child/TokensPage'))
 const FeelingsPage = lazy(() => import('./pages/child/FeelingsPage'))
 
+// Kind
+const ChildSettingsPage = lazy(() => import('./pages/child/ChildSettingsPage').then(m => ({ default: m.ChildSettingsPage })))
+
 // Ouder/admin
 const DashboardPage = lazy(() => import('./pages/parent/DashboardPage'))
 const TasksPage = lazy(() => import('./pages/parent/TasksPage'))
 const ScheduleEditorPage = lazy(() => import('./pages/parent/ScheduleEditorPage'))
 const RewardsPage = lazy(() => import('./pages/parent/RewardsPage'))
 const SettingsPage = lazy(() => import('./pages/parent/SettingsPage'))
+const ChildrenPage = lazy(() => import('./pages/parent/ChildrenPage').then(m => ({ default: m.ChildrenPage })))
 
 function PageLoading() {
   return (
@@ -73,6 +77,7 @@ export default function App() {
           <Route path="exercises" element={<ExercisesPage />} />
           <Route path="tokens" element={<TokensPage />} />
           <Route path="feelings" element={<FeelingsPage />} />
+          <Route path="settings" element={<ChildSettingsPage />} />
         </Route>
 
         {/* Ouder / hulpverlener / admin */}
@@ -88,6 +93,7 @@ export default function App() {
           <Route path="tasks" element={<TasksPage />} />
           <Route path="schedule" element={<ScheduleEditorPage />} />
           <Route path="tokens" element={<RewardsPage />} />
+          <Route path="children" element={<ChildrenPage />} />
           <Route path="communication" element={<div className="font-body text-ink-muted p-4">Communicatie — Fase 6</div>} />
           <Route path="dossier" element={<div className="font-body text-ink-muted p-4">Dossier — Fase 6</div>} />
           <Route path="settings" element={<SettingsPage />} />

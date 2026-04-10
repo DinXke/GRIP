@@ -90,6 +90,9 @@ model User {
   password    String?  // Argon2id hash, voor ouder/hulpverlener
   role        Role
   avatarUrl   String?
+  avatarId    String?  // ID van gekozen avatar (bv. 'meisje-1')
+  gender      String?  // 'jongen', 'meisje', 'neutraal'
+  dateOfBirth DateTime? // Voor leeftijdsgebaseerde oefeningen
   isActive    Boolean  @default(true)
   totpSecret  String?  // Encrypted, voor TOTP 2FA
 
@@ -104,6 +107,10 @@ model User {
   // Toegang
   caregiverAccess CaregiverAccess[] @relation("CaregiverUser")
   childrenAccess  CaregiverAccess[] @relation("ChildUser")
+
+  // Ouder-kind relaties
+  myChildren  ParentChild[] @relation("ParentChildren")
+  myParents   ParentChild[] @relation("ChildParents")
 
   // Kind-data
   schedules      Schedule[]
@@ -132,6 +139,19 @@ model User {
   trmnlDevice    TrmnlDevice?
 
   @@map("users")
+}
+
+model ParentChild {
+  id        String  @id @default(cuid())
+  parentId  String
+  parent    User    @relation("ParentChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  childId   String
+  child     User    @relation("ChildParents", fields: [childId], references: [id], onDelete: Cascade)
+  isPrimary Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([parentId, childId])
+  @@map("parent_children")
 }
 
 model RefreshToken {

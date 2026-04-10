@@ -4,11 +4,22 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { PauzeOverlay } from '../PauzeOverlay'
 
+// Instellingen-icoon (tandwieltje)
+function IconSettings({ size = 28, strokeWidth = 2.5, className = '' }: { size?: number; strokeWidth?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth} className={className} aria-hidden="true">
+      <circle cx="16" cy="16" r="4" stroke="currentColor" />
+      <path d="M16 4v3M16 25v3M4 16H7M25 16h3M7.5 7.5l2.1 2.1M22.4 22.4l2.1 2.1M7.5 24.5l2.1-2.1M22.4 9.6l2.1-2.1" stroke="currentColor" />
+    </svg>
+  )
+}
+
 const tabs = [
   { to: '/app/day', label: 'Mijn Dag', Icon: IconHome },
   { to: '/app/exercises', label: 'Oefenen', Icon: IconExercise },
   { to: '/app/tokens', label: 'Tokens', Icon: IconTokens },
   { to: '/app/feelings', label: 'Hoe gaat het?', Icon: IconEmotion },
+  { to: '/app/settings', label: 'Ik', Icon: IconSettings },
 ]
 
 export function ChildLayout() {
