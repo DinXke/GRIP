@@ -201,15 +201,26 @@ custom_fields:
     try {
       const archiver = await import('archiver')
       const archive = archiver.default('zip', { zlib: { level: 9 } })
-      reply.header('Content-Type', 'application/zip')
-      reply.header('Content-Disposition', 'attachment; filename="grip-trmnl-plugin.zip"')
 
       for (const [name, content] of Object.entries(files)) {
         archive.append(content, { name })
       }
 
-      archive.finalize()
-      return reply.send(archive)
+      // Collect stream into Buffer before sending
+      const chunks: Buffer[] = []
+      archive.on('data', (chunk: Buffer) => chunks.push(chunk))
+
+      await new Promise<void>((resolve, reject) => {
+        archive.on('end', resolve)
+        archive.on('error', reject)
+        archive.finalize()
+      })
+
+      const zipBuffer = Buffer.concat(chunks)
+      reply.header('Content-Type', 'application/zip')
+      reply.header('Content-Disposition', 'attachment; filename="grip-trmnl-plugin.zip"')
+      reply.header('Content-Length', zipBuffer.length)
+      return reply.send(zipBuffer)
     } catch (err) {
       // Fallback: serve als JSON
       reply.header('Content-Type', 'application/json')
