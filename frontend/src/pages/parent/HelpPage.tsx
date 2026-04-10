@@ -85,6 +85,10 @@ const CHANGELOG: ChangelogEntry[] = [
     version: 'v1.3.0',
     description: 'Afspraken, vakantie, TRMNL, TTS, wereldoriëntatie',
   },
+  {
+    version: 'v1.4.0',
+    description: 'Kind-lijstjes, TRMNL editor, documenten, avatars, auto-schedule oefeningen, spaarpot-beloningen',
+  },
 ]
 
 function AccordionItem({ item, isOpen, onToggle }: {
@@ -158,7 +162,7 @@ export function HelpPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-ink">Help & Handleiding</h1>
-            <p className="text-sm text-ink-muted">GRIP v1.0.0</p>
+            <p className="text-sm text-ink-muted">GRIP v1.4.0</p>
           </div>
         </div>
         <p className="text-sm text-ink-muted mt-3 leading-relaxed">
@@ -250,7 +254,7 @@ export function HelpPage() {
 
       {/* Footer */}
       <p className="text-center text-xs text-ink-muted pb-4">
-        GRIP v1.0.0 — Gebouwd met zorg voor Julie
+        GRIP v1.4.0 — Gebouwd met zorg voor Julie
       </p>
     </div>
   )

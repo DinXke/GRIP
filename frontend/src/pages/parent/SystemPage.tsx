@@ -597,7 +597,7 @@ export function SystemPage() {
         </p>
         <div className="space-y-2 text-sm">
           {[
-            { label: 'Versie', value: 'v1.3.0' },
+            { label: 'Versie', value: 'v1.4.0' },
             { label: 'Licentie', value: 'Privégebruik (familie Scheepers)' },
             { label: 'Methodologie', value: 'Barkley External Executive Function' },
             { label: 'GitHub', value: 'dinxke/adhd' },

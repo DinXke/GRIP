@@ -14,20 +14,8 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })
       .then(reg => {
-        // Force update check
-        reg.update().catch(() => {})
-        // Auto-activate new SW without waiting for tab close
-        reg.addEventListener('updatefound', () => {
-          const newSW = reg.installing
-          if (newSW) {
-            newSW.addEventListener('statechange', () => {
-              if (newSW.state === 'activated') {
-                // New SW active — reload to use it
-                window.location.reload()
-              }
-            })
-          }
-        })
+        // Check voor updates elke 5 minuten
+        setInterval(() => reg.update().catch(() => {}), 5 * 60 * 1000)
       })
       .catch(() => {})
   })
@@ -36,9 +24,10 @@ if ('serviceWorker' in navigator) {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minuten
+      staleTime: 1000 * 30, // 30 seconden — data is snel verouderd
       retry: 1,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true, // Ververs bij terugkeer naar tab
+      refetchOnMount: true, // Ververs bij mount van component
     },
   },
 })
