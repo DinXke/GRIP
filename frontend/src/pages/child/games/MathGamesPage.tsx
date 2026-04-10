@@ -2271,8 +2271,8 @@ interface SplitProblem {
 }
 
 function generateSplitProblem(difficulty: number, _roundIndex: number): SplitProblem {
-  const minTotal = difficulty === 1 ? 3 : difficulty === 2 ? 10 : 15
-  const maxTotal = difficulty === 1 ? 10 : difficulty === 2 ? 20 : 50
+  const minTotal = difficulty === 1 ? 3 : difficulty === 2 ? 6 : 10
+  const maxTotal = difficulty === 1 ? 10 : difficulty === 2 ? 15 : 20
   const total = rand(minTotal, maxTotal)
   const left = rand(1, total - 1)
   const right = total - left
