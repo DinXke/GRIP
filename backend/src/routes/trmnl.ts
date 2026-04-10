@@ -283,37 +283,46 @@ export async function trmnlRoutes(fastify: FastifyInstance) {
     return buildMarkup(targetChildId)
   })
 
-  // ── GET /api/trmnl/markup — Fallback voor browser preview ─────
+  // ── GET /api/trmnl/markup — Werkt voor zowel TRMNL polling (GET) als browser preview
   fastify.get('/markup', async (request, reply) => {
-    const { token } = request.query as { token?: string }
+    const query = request.query as { token?: string; child_id?: string }
 
-    // When a token is configured for any child, require it
-    if (token) {
-      // Validate token against all stored trmnl-tokens
-      const valid = await validateTrmnlTokenAny(token)
-      if (!valid) {
-        return reply.status(403).send({ error: 'Ongeldig TRMNL token' })
+    // Determine child
+    let targetChildId: string | null = query.child_id || null
+
+    if (!targetChildId) {
+      const allChildren = await prisma.user.findMany({
+        where: { role: 'child', isActive: true },
+        select: { id: true },
+        orderBy: { createdAt: 'asc' },
+      })
+      if (allChildren.length === 0) {
+        return { markup: '<div class="layout"><div class="title_bar"><span class="title">GRIP</span><span class="instance">Geen kind</span></div></div>' }
+      }
+      if (allChildren.length > 1 && (!query.child_id || query.child_id === 'all')) {
+        const counter = await redis.incr('trmnl-rotation-counter')
+        targetChildId = allChildren[(counter - 1) % allChildren.length].id
+      } else {
+        targetChildId = allChildren[0].id
       }
     }
 
-    const fallbackChild = await prisma.user.findFirst({
-      where: { role: 'child', isActive: true },
-      select: { id: true },
-    })
-    if (!fallbackChild) {
-      return reply.type('text/html').send('<html><body style="font-family:sans-serif;padding:40px;background:#111;color:#eee"><h1>GRIP TRMNL Plugin</h1><p>Geen kind geconfigureerd. Dit endpoint wordt gebruikt door TRMNL via POST.</p></body></html>')
+    // Token check (optional)
+    if (query.token) {
+      const valid = await validateTrmnlTokenAny(query.token)
+      if (!valid) return reply.status(403).send({ error: 'Ongeldig token' })
     }
 
-    // If a token was required but not provided, check if one is configured
-    if (!token) {
-      const storedToken = await redis.get(`trmnl-token:${fallbackChild.id}`)
-      if (storedToken) {
-        return reply.status(401).send({ error: 'Token vereist als query parameter: ?token=xxx' })
-      }
+    const data = await buildMarkup(targetChildId!)
+
+    // If Accept header wants JSON or if it's a TRMNL polling request, return JSON
+    const accept = request.headers.accept || ''
+    if (accept.includes('application/json') || request.headers['user-agent']?.includes('TRMNL')) {
+      return data
     }
 
-    const data = await buildMarkup(fallbackChild.id)
-    return reply.type('text/html').send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>GRIP TRMNL Preview</title><style>body{margin:0;padding:20px;background:#111;color:#eee;font-family:'Inter',sans-serif}.layout{background:#fff;color:#000;padding:20px;border-radius:8px;max-width:800px;margin:0 auto}.title_bar{display:flex;justify-content:space-between;border-top:1px solid #ccc;margin-top:16px;padding-top:8px}.title{font-weight:bold}.item{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee}.label{font-size:14px}.value{font-size:14px;font-weight:600}.tag_columns{display:flex;gap:8px;margin-top:12px}.tag{background:#f0f0f0;padding:2px 8px;border-radius:4px;font-size:12px}h2{color:#fff;text-align:center;margin-bottom:16px}</style></head><body><h2>GRIP TRMNL Preview (monochroom)</h2>${data.markup}<h2 style="margin-top:32px">Half Vertical</h2>${data.markup_half_vertical}<h2 style="margin-top:32px">Quadrant</h2>${data.markup_quadrant}</body></html>`)
+    // Browser preview
+    return reply.type('text/html').send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>GRIP TRMNL Preview</title><style>body{margin:0;padding:20px;background:#111;color:#eee;font-family:'Inter',sans-serif}.layout{background:#fff;color:#000;padding:20px;border-radius:8px;max-width:800px;margin:0 auto}.title_bar{display:flex;justify-content:space-between;border-top:1px solid #ccc;margin-top:16px;padding-top:8px}.title{font-weight:bold}.item{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee}.label{font-size:14px}.value{font-size:14px;font-weight:600}.tag_columns{display:flex;gap:8px;margin-top:12px}.tag{background:#f0f0f0;padding:2px 8px;border-radius:4px;font-size:12px}h2{color:#fff;text-align:center;margin-bottom:16px}.content{margin-bottom:12px}.data-list{margin-top:4px}</style></head><body><h2>GRIP TRMNL Preview</h2>${data.markup}<h2 style="margin-top:32px">Half Vertical</h2>${data.markup_half_vertical}<h2 style="margin-top:32px">Quadrant</h2>${data.markup_quadrant}</body></html>`)
   })
 
   // ── GET /api/trmnl/preview/:childId — Preview voor admin ─────
