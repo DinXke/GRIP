@@ -402,11 +402,6 @@ custom_fields:
     hint: "Kind-ID uit GRIP, of 'all' om te alterneren tussen kinderen"
     required: false`,
 
-      'full.liquid': `{{ markup }}`,
-
-      'half_vertical.liquid': `{{ markup_half_vertical }}`,
-
-      'quadrant.liquid': `{{ markup_quadrant }}`,
     }
 
     // Build ZIP using Node.js zlib (no archiver dependency)
