@@ -678,120 +678,38 @@ async function buildMarkup(childId: string, overrideDashboard?: Dashboard) {
 </div>`
   }
 
-  // ── Default layouts (unchanged) ───────────────────────────
+  // ── Layouts met eigen CSS (800x480 e-ink, monochroom) ──────
 
   const EMOTION_ICON: Record<string, string> = {
     great: '😄', good: '😊', okay: '😐', sad: '😢', angry: '😤',
   }
 
-  function rewardProgressBar(bal: number, rewards: typeof allRewards): string {
-    if (rewards.length === 0) return `⭐ ${bal} tokens`
-    const maxCost = rewards[rewards.length - 1].costTokens
-    const barWidth = 28
-    const filledWidth = Math.min(Math.round((bal / maxCost) * barWidth), barWidth)
-    let bar = ''
-    for (let i = 0; i < barWidth; i++) {
-      const milestone = rewards.find(r => {
-        const pos = Math.round((r.costTokens / maxCost) * barWidth)
-        return pos === i + 1
-      })
-      if (milestone) {
-        bar += bal >= milestone.costTokens ? '◆' : '◇'
-      } else {
-        bar += i < filledWidth ? '█' : '░'
-      }
-    }
-    return bar
-  }
-
-  const progressBar = rewardProgressBar(balance, allRewards)
-
-  const goalsLegend = allRewards.map(r => {
-    const reached = balance >= r.costTokens
-    return `<div class="item"><span class="label">${reached ? '◆' : '◇'} ${r.title}</span><span class="value">${r.costTokens} ⭐</span></div>`
-  }).join('')
-
-  // ── Full layout: Dagoverzicht ──────────────────────────────
-  const activityRows = activities.slice(0, 7).map(a => {
+  // Alleen nu + komende activiteiten
+  const remaining = activities.filter(a => {
     const [h, m] = a.startTime.split(':').map(Number)
-    const start = h * 60 + m
-    const isPast = nowMinutes > start + a.durationMinutes
-    const isCurrent = current?.id === a.id
-    const marker = isPast ? '✅' : isCurrent ? '▶' : '○'
-    return `<div class="item">
-      <span class="label">${marker} ${a.title}</span>
-      <span class="value">${a.startTime}</span>
-    </div>`
+    return (h * 60 + m + a.durationMinutes) > nowMinutes || current?.id === a.id
+  })
+
+  const starBarText = buildStarBar(balance, allRewards).replace(/<[^>]+>/g, '').trim()
+
+  // Eigen CSS — 800x480 e-ink scherm
+  const S = `<style>*{margin:0;padding:0;box-sizing:border-box}.g{width:800px;height:480px;padding:16px 20px;display:flex;flex-direction:column;font-family:sans-serif;color:#000;background:#fff}.gh{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:10px}.gt{font-size:20px;font-weight:800}.gd{font-size:12px;color:#444}.gb{flex:1;overflow:hidden}.gr{display:flex;align-items:center;padding:4px 0;border-bottom:1px solid #ddd;font-size:13px;gap:6px}.gi{width:18px;text-align:center;flex-shrink:0}.gn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gv{font-weight:700;font-size:12px;flex-shrink:0}.gc{background:#eee;border-radius:3px;padding:4px 6px;font-weight:600}.gf{margin-top:auto;border-top:2px solid #000;padding-top:8px}.gbar{font-family:monospace;font-size:11px;letter-spacing:0.5px;margin:2px 0}.gbl{font-size:10px;color:#555}</style>`
+
+  // ── Full: planning + tokens ────────────────────────────────
+  const rows = remaining.slice(0, 8).map(a => {
+    const isCur = current?.id === a.id
+    return `<div class="gr${isCur ? ' gc' : ''}"><span class="gi">${isCur ? '▶' : '○'}</span><span class="gn">${a.icon ?? ''} ${a.title}</span><span class="gv">${a.startTime}</span></div>`
   }).join('')
 
-  const markup = `<div class="layout">
-  <div class="columns">
-    <div class="column">
-      <span class="title title--small">${name}'s dag</span>
-      <div class="content">
-        <div class="data-list">
-          ${activityRows || '<div class="item"><span class="label">Geen schema vandaag</span></div>'}
-        </div>
-      </div>
-      <div style="margin-top:8px;font-family:monospace;font-size:11px;letter-spacing:1px;color:#333">${progressBar}</div>
-      <div class="tag_columns">
-        <span class="tag">⭐ ${balance}</span>
-        <span class="tag">${nextReward ? `Nog ${Math.max(0, nextReward.costTokens - balance)} → ${nextReward.title}` : 'Goed bezig!'}</span>
-        ${lastEmotion ? `<span class="tag">${EMOTION_ICON[lastEmotion.level]}</span>` : ''}
-      </div>
-    </div>
-  </div>
-  <div class="title_bar">
-    <span class="title">GRIP</span>
-    <span class="instance">${formatDate(now)}</span>
-  </div>
-</div>`
+  const markup = `${S}<div class="g"><div class="gh"><span class="gt">${name}</span><span class="gd">${formatDate(now)}${lastEmotion ? ' ' + EMOTION_ICON[lastEmotion.level] : ''}</span></div><div class="gb">${rows || '<div style="padding:20px;color:#888">Klaar voor vandaag!</div>'}</div><div class="gf"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px"><span style="font-weight:700;font-size:14px">⭐ ${balance}</span><span style="font-size:11px;color:#555">+${earnedToday} vandaag${streakDays > 1 ? ' · 🔥' + streakDays + 'd' : ''}</span></div><div class="gbar">${starBarText}</div>${nextReward ? `<div class="gbl">${nextReward.title} (${nextReward.costTokens}⭐, nog ${Math.max(0, nextReward.costTokens - balance)})</div>` : ''}</div></div>`
 
-  // ── Half vertical: Token voortgang met doelen ──────────────
-  const markup_half_vertical = `<div class="layout layout--half">
-  <div class="columns">
-    <div class="column">
-      <span class="title title--small">⭐ ${balance} tokens</span>
-      <div class="content">
-        <div style="margin:8px 0;font-family:monospace;font-size:12px;letter-spacing:1px;color:#333">${progressBar}</div>
-        <div class="data-list">
-          ${goalsLegend || '<div class="item"><span class="label">Geen doelen ingesteld</span></div>'}
-          <div class="item">
-            <span class="label">Vandaag verdiend</span>
-            <span class="value">+${earnedToday}</span>
-          </div>
-          ${streakDays > 1 ? `<div class="item"><span class="label">Streak</span><span class="value">${streakDays} dagen</span></div>` : ''}
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="title_bar">
-    <span class="title">GRIP</span>
-    <span class="instance">${name}</span>
-  </div>
-</div>`
+  // ── Half: tokens + doelen ──────────────────────────────────
+  const goalRows = allRewards.slice(0, 5).map(r => `<div class="gr"><span class="gi">${balance >= r.costTokens ? '★' : '☆'}</span><span class="gn">${r.title}</span><span class="gv">${r.costTokens}⭐</span></div>`).join('')
+  const markup_half_vertical = `${S}<div class="g"><div class="gh"><span class="gt">⭐ ${balance}</span><span class="gd">${name}</span></div><div class="gb"><div class="gbar">${starBarText}</div>${nextReward ? `<div class="gbl" style="margin-bottom:8px">${nextReward.title} (nog ${Math.max(0, nextReward.costTokens - balance)})</div>` : ''}<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#555;margin:6px 0 4px">Doelen</div>${goalRows}<div style="margin-top:8px;font-size:12px;color:#555">+${earnedToday} vandaag${streakDays > 1 ? ' · 🔥 ' + streakDays + ' dagen' : ''}</div></div></div>`
 
-  // ── Quadrant: Nu Doen ───────────────────────────────────────
-  const markup_quadrant = `<div class="layout layout--quadrant">
-  <div class="columns">
-    <div class="column">
-      <span class="title title--small">${current ? '▶ NU' : upcoming ? 'STRAKS' : 'VANDAAG'}</span>
-      <div class="content">
-        ${currentActivity
-          ? `<p style="font-size:18px;font-weight:bold;margin:8px 0">${currentActivity.icon ?? ''} ${currentActivity.title}</p>
-             <p style="font-size:13px">${currentActivity.startTime} · ${currentActivity.durationMinutes} min</p>`
-          : `<p style="font-size:14px">Geen activiteiten meer vandaag</p>`}
-      </div>
-      <div class="tag_columns">
-        <span class="tag">⭐ ${balance}</span>
-      </div>
-    </div>
-  </div>
-  <div class="title_bar">
-    <span class="title">GRIP</span>
-    <span class="instance">${name}</span>
-  </div>
-</div>`
+  // ── Quadrant: nu bezig ─────────────────────────────────────
+  const cur = current ?? upcoming
+  const markup_quadrant = `${S}<div class="g"><div class="gh"><span class="gt">${current ? '▶ NU' : 'STRAKS'}</span><span class="gd">⭐ ${balance}</span></div><div class="gb" style="display:flex;align-items:center;justify-content:center;text-align:center"><div>${cur ? `<div style="font-size:22px;font-weight:800">${cur.icon ?? ''} ${cur.title}</div><div style="font-size:14px;color:#555;margin-top:4px">${cur.startTime} · ${cur.durationMinutes} min</div>` : '<div style="font-size:16px;color:#888">Klaar voor vandaag!</div>'}</div></div></div>`
 
   return {
     markup: customFullMarkup ?? markup,
