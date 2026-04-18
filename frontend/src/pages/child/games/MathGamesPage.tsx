@@ -9,12 +9,13 @@
  * 5. FractionPizza  — Kleur breuken op een pizza
  * 6. SpeedTap       — Beantwoord zo snel mogelijk
  * 7. SplitTree      — Splitsboom (getallen splitsen)
+ * 8. Maaltafels     — Tafels 1–10 oefenen (keuze of typen)
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../../../stores/authStore'
 import { api } from '../../../lib/api'
-import { soundCorrect, soundWrong, soundMatch, soundWin, soundPop, soundFlip, soundTap, soundStreak, feedbackCorrect, feedbackWrong, feedbackWin, soundTick, soundPickup, soundDrop, vibrate, isMuted, toggleMute } from '../../../lib/sounds'
+import { soundCorrect, soundWrong, soundMatch, soundWin, soundPop, soundFlip, soundTap, soundStreak, feedbackCorrect, feedbackWrong, feedbackWin, soundTick, soundPickup, soundDrop, vibrate, isMuted, toggleMute, soundBigCorrect, soundSkipNegative } from '../../../lib/sounds'
 
 // ═══════════════════════════════════════════════════════════════
 // Gedeelde helpers
@@ -2595,6 +2596,325 @@ function SplitTree({ onBack, difficulty }: GameProps) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// 8. Maaltafels — Vermenigvuldigen oefenen (1×1 t/m 10×10)
+// ═══════════════════════════════════════════════════════════════
+
+// Alle geldige producten van de tafels 1–10 (module-level, statisch)
+const TAFEL_PRODUCTS = (() => {
+  const s = new Set<number>()
+  for (let i = 1; i <= 10; i++) for (let j = 1; j <= 10; j++) s.add(i * j)
+  return [...s]
+})()
+
+function genMaaltafel() {
+  const a = rand(1, 10)
+  const b = rand(1, 10)
+  return { a, b, answer: a * b }
+}
+
+function genMaaltafelOptions(answer: number, diff: number): number[] {
+  const count = diff === 1 ? 3 : 6
+  const wrong = shuffle(TAFEL_PRODUCTS.filter((p) => p !== answer))
+  return shuffle([answer, ...wrong.slice(0, count - 1)])
+}
+
+function Maaltafels({ onBack, difficulty }: GameProps) {
+  const childId = useAuthStore((s) => s.activeChild?.id ?? '')
+
+  // Eerste opgave: consistent gehouden via ref zodat problem + opties matchen
+  const firstProblem = useRef(genMaaltafel())
+
+  const [score, setScore] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [problem, setProblem] = useState(() => firstProblem.current)
+  const [options, setOptions] = useState<number[]>(() =>
+    difficulty < 3 ? genMaaltafelOptions(firstProblem.current.answer, difficulty) : [],
+  )
+  const [selected, setSelected] = useState<number | null>(null)
+  const [typed, setTyped] = useState('')
+  const [feedback, setFeedback] = useState<'correct' | 'wrong' | 'skip' | null>(null)
+  const [animKey, setAnimKey] = useState(0)
+  const [stopped, setStopped] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+
+  // Herinitialiseer opties als moeilijkheid verandert
+  useEffect(() => {
+    if (difficulty < 3) setOptions(genMaaltafelOptions(problem.answer, difficulty))
+  }, [difficulty])
+
+  // Focus invoerveld in moeilijk-modus
+  useEffect(() => {
+    if (difficulty === 3 && !feedback && !stopped) {
+      inputRef.current?.focus()
+    }
+  }, [difficulty, feedback, problem, stopped])
+
+  useEffect(() => () => clearTimeout(timerRef.current), [])
+
+  function nextProblem() {
+    const p = genMaaltafel()
+    setProblem(p)
+    if (difficulty < 3) setOptions(genMaaltafelOptions(p.answer, difficulty))
+    setSelected(null)
+    setTyped('')
+    setFeedback(null)
+    setAnimKey((k) => k + 1)
+    setShowConfetti(false)
+  }
+
+  function handleCheck() {
+    if (feedback) return
+    const userAnswer = difficulty === 3 ? parseInt(typed.trim(), 10) : selected
+    if (userAnswer === null || userAnswer === undefined || isNaN(userAnswer as number)) return
+
+    setTotal((t) => t + 1)
+    if (userAnswer === problem.answer) {
+      setScore((s) => s + 1)
+      setFeedback('correct')
+      setShowConfetti(true)
+      soundBigCorrect()
+      vibrate(60)
+    } else {
+      setFeedback('wrong')
+      feedbackWrong()
+    }
+    clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(nextProblem, 1400)
+  }
+
+  function handleSkip() {
+    if (feedback) return
+    setTotal((t) => t + 1)
+    setFeedback('skip')
+    soundSkipNegative()
+    vibrate([30, 50, 40, 50, 30])
+    clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(nextProblem, 900)
+  }
+
+  function handleStop() {
+    clearTimeout(timerRef.current)
+    setStopped(true)
+    if (total > 0) feedbackWin()
+  }
+
+  function handleReplay() {
+    setScore(0)
+    setTotal(0)
+    setStopped(false)
+    setFeedback(null)
+    setShowConfetti(false)
+    nextProblem()
+  }
+
+  if (stopped) {
+    return (
+      <GameEndScreen
+        score={score}
+        maxScore={total}
+        gameName="Maaltafels"
+        onBack={onBack}
+        childId={childId}
+        onReplay={handleReplay}
+      />
+    )
+  }
+
+  const bgFlash =
+    feedback === 'correct'
+      ? '#5B8C5A1A'
+      : feedback === 'wrong'
+        ? '#C45D4C1A'
+        : feedback === 'skip'
+          ? '#E8734A1A'
+          : 'transparent'
+
+  const canCheck =
+    feedback === null &&
+    (difficulty < 3 ? selected !== null : typed.trim().length > 0)
+
+  return (
+    <div
+      className="game-viewport flex flex-col"
+      style={{ background: 'var(--bg-primary)', transition: 'background 0.25s' }}
+    >
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: bgFlash, transition: 'background 0.25s', zIndex: 0 }}
+      />
+      <ConfettiBurst active={showConfetti} />
+
+      {/* Header */}
+      <div className="relative z-10 flex items-center justify-between px-5 pt-4 pb-2 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">✖</span>
+          <span
+            className="font-display font-bold text-xl"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Maaltafels
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div
+            className="font-display font-bold px-3 py-1 rounded-full text-sm"
+            style={{ background: 'var(--accent-token)', color: '#3D3229' }}
+          >
+            {score}/{total}
+          </div>
+          <MuteButton />
+          <button
+            onClick={handleStop}
+            className="font-display font-bold px-4 py-2 rounded-xl text-sm"
+            style={{ background: '#C45D4C', color: 'white', minHeight: 36 }}
+          >
+            Stoppen
+          </button>
+        </div>
+      </div>
+
+      {/* Opgave */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-5 gap-6">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={animKey}
+            initial={{ scale: 0.7, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: -20 }}
+            transition={{ type: 'spring', stiffness: 340, damping: 24 }}
+            className="text-center"
+          >
+            <div
+              className="font-display font-bold"
+              style={{ fontSize: 68, color: 'var(--text-primary)', lineHeight: 1.1 }}
+            >
+              {problem.a} × {problem.b} = ?
+            </div>
+
+            {/* Feedback */}
+            <AnimatePresence>
+              {feedback && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="mt-4 font-display font-bold text-xl"
+                  style={{
+                    color:
+                      feedback === 'correct'
+                        ? '#5B8C5A'
+                        : feedback === 'wrong'
+                          ? '#C45D4C'
+                          : '#E8734A',
+                  }}
+                >
+                  {feedback === 'correct'
+                    ? `Goed zo! ${problem.answer}`
+                    : feedback === 'wrong'
+                      ? `Het antwoord is ${problem.answer}`
+                      : `Overgeslagen — ${problem.answer}`}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Antwoordknoppen (makkelijk / gemiddeld) of invoerveld (moeilijk) */}
+        <AnimatePresence>
+          {!feedback && (
+            <motion.div
+              key={`opts-${animKey}`}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="w-full max-w-sm"
+            >
+              {difficulty < 3 ? (
+                <div className={`grid gap-3 ${difficulty === 1 ? 'grid-cols-3' : 'grid-cols-3'}`}>
+                  {options.map((opt) => (
+                    <motion.button
+                      key={opt}
+                      onClick={() => { soundTap(); setSelected(opt) }}
+                      whileTap={{ scale: 0.9 }}
+                      className="font-display font-bold text-2xl py-5 rounded-2xl"
+                      style={{
+                        background:
+                          selected === opt ? 'var(--accent-primary)' : 'var(--bg-card)',
+                        color: selected === opt ? 'white' : 'var(--text-primary)',
+                        border: `2px solid ${
+                          selected === opt ? 'var(--accent-primary)' : 'var(--border-color)'
+                        }`,
+                        minHeight: difficulty === 1 ? 80 : 72,
+                        fontSize: difficulty === 2 ? 22 : 26,
+                      }}
+                    >
+                      {opt}
+                    </motion.button>
+                  ))}
+                </div>
+              ) : (
+                <input
+                  ref={inputRef}
+                  type="number"
+                  inputMode="numeric"
+                  value={typed}
+                  onChange={(e) => setTyped(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
+                  placeholder="Typ het antwoord..."
+                  className="w-full text-center font-display font-bold rounded-2xl"
+                  style={{
+                    fontSize: 36,
+                    padding: '20px 16px',
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-primary)',
+                    border: '2px solid var(--border-color)',
+                    outline: 'none',
+                  }}
+                />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Actieknoppen */}
+      <div className="relative z-10 px-5 pb-8 pt-2 flex gap-3 flex-shrink-0">
+        <motion.button
+          onClick={handleSkip}
+          disabled={!!feedback}
+          whileTap={{ scale: 0.94 }}
+          className="flex-1 font-display font-bold rounded-2xl text-lg"
+          style={{
+            background: '#E8734A',
+            color: 'white',
+            opacity: feedback ? 0.45 : 1,
+            minHeight: 60,
+          }}
+        >
+          Overslaan
+        </motion.button>
+        <motion.button
+          onClick={handleCheck}
+          disabled={!canCheck}
+          whileTap={{ scale: 0.94 }}
+          className="flex-1 font-display font-bold rounded-2xl text-lg"
+          style={{
+            background: 'var(--accent-primary)',
+            color: 'white',
+            opacity: canCheck ? 1 : 0.45,
+            minHeight: 60,
+          }}
+        >
+          Volgende
+        </motion.button>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Hoofd-component: MathGamesPage
 // ═══════════════════════════════════════════════════════════════
 
@@ -2663,6 +2983,14 @@ const GAMES: GameInfo[] = [
     description: 'Splits het getal in twee delen',
     color: '#5B8C5A',
     Component: SplitTree,
+  },
+  {
+    id: 'maaltafels',
+    emoji: '\u2716\uFE0F',
+    name: 'Maaltafels',
+    description: 'Oefen de tafels van 1 tot 10',
+    color: '#7B68EE',
+    Component: Maaltafels,
   },
 ]
 

@@ -189,3 +189,15 @@ export function feedbackWin() {
   soundWin()
   vibrate([30, 50, 30, 50, 100])
 }
+
+/** Maaltafels: luid jubelgeluid bij goed antwoord */
+export function soundBigCorrect() {
+  if (muted) return
+  playNotes([[523, 0.08], [659, 0.08], [784, 0.08], [1047, 0.18], [1319, 0.25]], 'sine', 0.55)
+}
+
+/** Maaltafels: heel negatief luid geluid bij overslaan */
+export function soundSkipNegative() {
+  if (muted) return
+  playNotes([[350, 0.12], [280, 0.12], [210, 0.22]], 'sawtooth', 0.5)
+}
