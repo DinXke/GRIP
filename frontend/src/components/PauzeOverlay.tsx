@@ -2,7 +2,7 @@
  * Pauze-overlay — altijd bereikbaar kalmeerscherm
  * Biedt: ademhaling, grounding, of gewoon even rust
  */
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, RefObject } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 type PauzeScreen = 'menu' | 'breathe' | 'ground'
@@ -149,11 +149,64 @@ function QuickGrounding({ onDone }: { onDone: () => void }) {
 }
 
 // ── Hoofd overlay ──────────────────────────────────────────────
-export function PauzeOverlay({ onClose }: { onClose: () => void }) {
+export function PauzeOverlay({
+  onClose,
+  returnFocusRef,
+}: {
+  onClose: () => void
+  returnFocusRef?: RefObject<HTMLButtonElement>
+}) {
   const [screen, setScreen] = useState<PauzeScreen>('menu')
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Verplaats focus naar sluit-knop bij openen
+  useEffect(() => {
+    closeButtonRef.current?.focus()
+  }, [])
+
+  // Geef focus terug aan pauze-knop vóór unmount
+  const handleClose = () => {
+    returnFocusRef?.current?.focus()
+    onClose()
+  }
+
+  // Focus-trap: Tab blijft binnen overlay; Escape sluit
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      handleClose()
+      return
+    }
+    if (e.key !== 'Tab') return
+
+    const focusable = overlayRef.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+    if (!focusable || focusable.length === 0) return
+
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+
+    if (e.shiftKey) {
+      if (document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      }
+    } else {
+      if (document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+  }
 
   return (
     <motion.div
+      ref={overlayRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pauze-title"
+      onKeyDown={handleKeyDown}
       className="fixed inset-0 z-50 flex flex-col"
       style={{ background: '#2C2620' }}
       initial={{ opacity: 0, y: '100%' }}
@@ -181,12 +234,13 @@ export function PauzeOverlay({ onClose }: { onClose: () => void }) {
           )}
         </AnimatePresence>
 
-        <p className="font-display font-bold text-white text-lg">
+        <h2 id="pauze-title" className="font-display font-bold text-white text-lg">
           {screen === 'menu' ? '🤲 Pauze' : screen === 'breathe' ? '💨 Ademhalen' : '🌳 Grounding'}
-        </p>
+        </h2>
 
         <button
-          onClick={onClose}
+          ref={closeButtonRef}
+          onClick={handleClose}
           className="w-10 h-10 flex items-center justify-center rounded-full font-body text-xl"
           style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)' }}
           aria-label="Sluiten"
@@ -242,7 +296,7 @@ export function PauzeOverlay({ onClose }: { onClose: () => void }) {
 
                 {/* Gewoon rusten */}
                 <button
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="rounded-2xl p-5 text-left"
                   style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.1)' }}
                 >
@@ -260,13 +314,13 @@ export function PauzeOverlay({ onClose }: { onClose: () => void }) {
 
           {screen === 'breathe' && (
             <motion.div key="breathe" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <QuickBreathing onDone={onClose} />
+              <QuickBreathing onDone={handleClose} />
             </motion.div>
           )}
 
           {screen === 'ground' && (
             <motion.div key="ground" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <QuickGrounding onDone={onClose} />
+              <QuickGrounding onDone={handleClose} />
             </motion.div>
           )}
         </AnimatePresence>

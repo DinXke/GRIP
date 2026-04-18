@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { IconHome, IconExercise, IconTokens, IconEmotion, IconList } from '../icons/NavIcons'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { PauzeOverlay } from '../PauzeOverlay'
 
 // Instellingen-icoon (tandwieltje)
@@ -25,6 +25,7 @@ const tabs = [
 
 export function ChildLayout() {
   const [pauseOpen, setPauseOpen] = useState(false)
+  const pauseButtonRef = useRef<HTMLButtonElement>(null)
 
   return (
     <div className="flex flex-col h-[100dvh] bg-surface">
@@ -35,6 +36,7 @@ export function ChildLayout() {
 
       {/* Floating pauze-knop — altijd zichtbaar */}
       <motion.button
+        ref={pauseButtonRef}
         onClick={() => setPauseOpen(true)}
         className="fixed z-40 flex items-center justify-center"
         style={{
@@ -60,7 +62,12 @@ export function ChildLayout() {
 
       {/* Pauze-overlay */}
       <AnimatePresence>
-        {pauseOpen && <PauzeOverlay onClose={() => setPauseOpen(false)} />}
+        {pauseOpen && (
+          <PauzeOverlay
+            onClose={() => setPauseOpen(false)}
+            returnFocusRef={pauseButtonRef}
+          />
+        )}
       </AnimatePresence>
 
       {/* Bottom navigation */}
