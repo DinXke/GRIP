@@ -2619,7 +2619,7 @@ function genMaaltafelOptions(answer: number, diff: number): number[] {
 }
 
 function Maaltafels({ onBack, difficulty }: GameProps) {
-  const childId = useAuthStore((s) => s.activeChild?.id ?? '')
+  const { user } = useAuthStore()
 
   // Eerste opgave: consistent gehouden via ref zodat problem + opties matchen
   const firstProblem = useRef(genMaaltafel())
@@ -2716,7 +2716,7 @@ function Maaltafels({ onBack, difficulty }: GameProps) {
         maxScore={total}
         gameName="Maaltafels"
         onBack={onBack}
-        childId={childId}
+        childId={user?.id ?? ''}
         onReplay={handleReplay}
       />
     )
