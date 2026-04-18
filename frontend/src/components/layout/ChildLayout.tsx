@@ -98,7 +98,7 @@ export function ChildLayout() {
                       />
                     </motion.span>
                     <span
-                      className="text-[11px] font-body font-semibold leading-tight"
+                      className="text-[13px] font-body leading-tight text-ink"
                       style={{ fontWeight: isActive ? 700 : 500 }}
                     >
                       {label}

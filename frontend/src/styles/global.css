@@ -244,6 +244,7 @@ html.high-contrast [data-theme="child"] {
   --text-primary: #1a0f00;
   --text-muted: #4a3a28;
   --accent-warm: #c05a28;
+  --accent-primary: #1a0f00;
 }
 html.high-contrast [data-theme="adult"] {
   --bg-primary: #ffffff;
